@@ -4,20 +4,25 @@
 #include <QMainWindow>
 
 QT_BEGIN_NAMESPACE
-namespace Ui {
-class Gmeteo;
-}
+namespace Ui { class gmeteo; }
 QT_END_NAMESPACE
 
-class Gmeteo : public QMainWindow
+class gmeteo : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit Gmeteo(QWidget *parent = nullptr);
-    ~Gmeteo() override;
+    gmeteo(QWidget *parent = nullptr);
+    ~gmeteo();
+
+private slots:
+    void on_btnLogin_clicked();
+    void on_btnNavStations_clicked();
+    void on_btnBackFromStations_clicked();
+    void on_btnLogout_clicked();
 
 private:
-    Ui::Gmeteo *ui;
+    Ui::gmeteo *ui;
 };
+
 #endif // GMETEO_H
