@@ -282,14 +282,14 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     m_chartView = new QChartView(chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setBackgroundBrush(Qt::transparent);
+    m_chartView->setStyleSheet("background: transparent; border: none;");
     m_chartView->setFixedHeight(190);
 
     // Overlay center label
     m_chartCenter = new QLabel(m_chartView);
     m_chartCenter->setAlignment(Qt::AlignCenter);
     m_chartCenter->setAttribute(Qt::WA_TransparentForMouseEvents);
-    m_chartCenter->setStyleSheet(
-        "color: white; font-size: 18px; font-weight: 700; background: transparent;");
+    m_chartCenter->setStyleSheet("background: transparent;");
     m_chartCenter->setGeometry(0, 0, 240, 190);
 
     chartCardV->addWidget(m_chartView);
@@ -385,7 +385,11 @@ void EquipmentPage::refresh()
     addSlice(stats.horsService,   QColor(0xE0, 0x5A, 0x5B));
 
     m_chartCenter->setText(
-        QString("%1%\nDisponibles").arg(static_cast<int>(stats.pctDisponibles)));
+        QString("<div style='text-align:center;'>"
+                "<span style='font-size:24px; font-weight:800; color:#3fc98f;'>%1%</span><br>"
+                "<span style='font-size:11px; font-weight:600; color:#8fb3c2;'>Disponibles</span>"
+                "</div>").arg(static_cast<int>(stats.pctDisponibles)));
+    m_chartCenter->setTextFormat(Qt::RichText);
 
     // Update chart legend
     m_legendDispo->setText(QString("Disponibles    <b style='color:#e6f1f5'>%1</b>").arg(stats.disponibles));
