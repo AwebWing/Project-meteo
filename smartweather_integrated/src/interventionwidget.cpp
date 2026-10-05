@@ -1,6 +1,7 @@
 #include "interventionwidget.h"
 #include "barchartwidget.h"
 #include "interventiondialog.h"
+#include "interventionservice.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -395,7 +396,7 @@ void InterventionWidget::refreshStats()
 
 void InterventionWidget::onAdd()
 {
-    InterventionDialog dlg(Intervention(), true, this);
+    InterventionDialog dlg(0, this);
     if (dlg.exec() != QDialog::Accepted)
         return;
     Intervention i = dlg.result();
@@ -415,7 +416,7 @@ void InterventionWidget::onEdit()
     const auto cur = InterventionService::get(id);
     if (!cur) return;
 
-    InterventionDialog dlg(*cur, false, this);
+    InterventionDialog dlg(id, this);
     if (dlg.exec() != QDialog::Accepted)
         return;
     const Intervention r = dlg.result();

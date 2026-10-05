@@ -1,32 +1,54 @@
 #pragma once
-#include <QDateTime>
-#include <QString>
+// Couche métier « Gestion des interventions » — AUCUNE dépendance à l'interface graphique
+// (exigence de maintenabilité du cahier : règles métier testables indépendamment des écrans).
 
-// Valeurs contrôlées (cahier des spécifications, annexe B)
-namespace Statut {
-inline const QString Planifiee = QStringLiteral("Planifiée");
-inline const QString EnCours   = QStringLiteral("En cours");
-inline const QString Terminee  = QStringLiteral("Terminée");
-inline const QString Annulee   = QStringLiteral("Annulée");
-}
+#include <QDateTime>
+#include <QList>
+#include <QPair>
+#include <QString>
+#include <QStringList>
+
 namespace Priorite {
-inline const QString Faible    = QStringLiteral("Faible");
-inline const QString Moyenne   = QStringLiteral("Moyenne");
-inline const QString Haute     = QStringLiteral("Haute");
-inline const QString Critique  = QStringLiteral("Critique");
+    const QString Faible = "Faible";
+    const QString Moyenne = "Moyenne";
+    const QString Haute = "Haute";
+    const QString Critique = "Critique";
+}
+
+namespace Statut {
+    const QString Planifiee = "Planifiée";
+    const QString EnCours = "En cours";
+    const QString Terminee = "Terminée";
+    const QString Annulee = "Annulée";
 }
 
 struct Intervention {
     int id = 0;
     QString type;
-    QString priorite;
-    QString statut;
+    QString priorite = Priorite::Moyenne;
+    QString statut = Statut::Planifiee;
     QDateTime debut;
-    QDateTime fin;
+    QDateTime fin;            // invalide = non définie
     QString description;
     QString responsable;
     QString compteRendu;
     int idZone = 0;
-    int idEmploi = 0;      // 0 = aucun emploi lié (NULL en base)
-    QString zoneNom;       // lecture seule (jointure avec ZONE)
+    QString zoneNom;           // Added missing member for integrated version
+    int idEmploi = 0;         // 0 = aucun emploi lié
 };
+
+struct Prerequis {
+    bool pret = false;
+    QStringList problemes;
+};
+
+struct Estimation {
+    double heures = -1;       // -1 = pas d'historique exploitable
+    int echantillon = 0;
+    bool memeZone = false;
+};
+
+using Counts = QList<QPair<QString, int>>;
+using IdLabel = QList<QPair<int, QString>>;
+
+// Note: Business logic is now centralized in the InterventionService class in interventionservice.h

@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Charts Sql PrintSupport)
 
@@ -43,6 +44,7 @@ add_executable(SmartWeather_Integrated WIN32
     src/interventionservice.cpp
     src/interventiondialog.h
     src/interventiondialog.cpp
+    src/interventiondialog.ui
     src/interventionwidget.h
     src/interventionwidget.cpp
     src/barchartwidget.h

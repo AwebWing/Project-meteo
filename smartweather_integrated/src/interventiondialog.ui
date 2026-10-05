@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>InterventionDialog</class>
+ <widget class="QDialog" name="InterventionDialog">
+  <property name="geometry">
+   <rect><x>0</x><y>0</y><width>620</width><height>640</height></rect>
+  </property>
+  <property name="windowTitle">
+   <string>Intervention</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <property name="spacing"><number>12</number></property>
+   <item>
+    <widget class="QLabel" name="labelTitre">
+     <property name="text"><string>Détails de l'intervention</string></property>
+     <property name="class" stdset="0"><string notr="true">sectionTitle</string></property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <property name="horizontalSpacing"><number>14</number></property>
+     <property name="verticalSpacing"><number>10</number></property>
+     <item row="0" column="0"><widget class="QLabel" name="lblType"><property name="text"><string>Type *</string></property></widget></item>
+     <item row="0" column="1"><widget class="QComboBox" name="comboType"/></item>
+     <item row="1" column="0"><widget class="QLabel" name="lblZone"><property name="text"><string>Zone *</string></property></widget></item>
+     <item row="1" column="1"><widget class="QComboBox" name="comboZone"/></item>
+     <item row="2" column="0"><widget class="QLabel" name="lblPriorite"><property name="text"><string>Priorité *</string></property></widget></item>
+     <item row="2" column="1"><widget class="QComboBox" name="comboPriorite"/></item>
+     <item row="3" column="0"><widget class="QLabel" name="lblStatut"><property name="text"><string>Statut *</string></property></widget></item>
+     <item row="3" column="1"><widget class="QComboBox" name="comboStatut"/></item>
+     <item row="4" column="0"><widget class="QLabel" name="lblDebut"><property name="text"><string>Date de début *</string></property></widget></item>
+     <item row="4" column="1">
+      <widget class="QDateTimeEdit" name="dtDebut">
+       <property name="displayFormat"><string>dd/MM/yyyy HH:mm</string></property>
+       <property name="calendarPopup"><bool>true</bool></property>
+      </widget>
+     </item>
+     <item row="5" column="0">
+      <widget class="QCheckBox" name="checkFin"><property name="text"><string>Date de fin</string></property></widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QDateTimeEdit" name="dtFin">
+       <property name="displayFormat"><string>dd/MM/yyyy HH:mm</string></property>
+       <property name="calendarPopup"><bool>true</bool></property>
+      </widget>
+     </item>
+     <item row="6" column="0"><widget class="QLabel" name="lblResp"><property name="text"><string>Responsable</string></property></widget></item>
+     <item row="6" column="1">
+      <widget class="QLineEdit" name="editResponsable">
+       <property name="placeholderText"><string>Nom du responsable de la mission</string></property>
+      </widget>
+     </item>
+     <item row="7" column="0"><widget class="QLabel" name="lblEmploi"><property name="text"><string>Emploi lié</string></property></widget></item>
+     <item row="7" column="1"><widget class="QComboBox" name="comboEmploi"/></item>
+     <item row="8" column="0"><widget class="QLabel" name="lblDesc"><property name="text"><string>Description</string></property></widget></item>
+     <item row="8" column="1">
+      <widget class="QPlainTextEdit" name="editDescription">
+       <property name="maximumSize"><size><width>16777215</width><height>80</height></size></property>
+      </widget>
+     </item>
+     <item row="9" column="0"><widget class="QLabel" name="lblCR"><property name="text"><string>Compte-rendu</string></property></widget></item>
+     <item row="9" column="1">
+      <widget class="QPlainTextEdit" name="editCompteRendu">
+       <property name="maximumSize"><size><width>16777215</width><height>100</height></size></property>
+       <property name="placeholderText"><string>Obligatoire pour clôturer (20 caractères minimum)</string></property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QLabel" name="labelAide">
+     <property name="text"><string>* champs obligatoires — la zone doit être active ; une intervention « En cours » exige un responsable ou un emploi lié.</string></property>
+     <property name="wordWrap"><bool>true</bool></property>
+     <property name="class" stdset="0"><string notr="true">caption</string></property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Save</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
