@@ -1,18 +1,17 @@
 #pragma once
 #include "intervention.h"
-
 #include <QDate>
-#include <QPair>
 #include <QStringList>
 #include <QVector>
 #include <optional>
+#include <QMap>
 
 struct InterventionFilter {
-    QString texte;          // recherche instantanée (id, type, zone, responsable, statut...)
+    QString texte;
     QString statut;
     QString priorite;
     QString type;
-    int idZone = 0;         // 0 = toutes
+    int idZone = 0;
     bool periode = false;
     QDate du, au;
 };
@@ -25,9 +24,9 @@ struct PriorityResult {
 };
 
 struct DurationEstimate {
-    double heures = -1;     // -1 = pas assez d'historique
+    double heures = -1;
     int echantillon = 0;
-    QString base;           // "même type et même zone" / "même type" / "toutes interventions"
+    QString base;
 };
 
 struct HistoryEntry {
@@ -49,39 +48,54 @@ struct EmploiItem {
 
 using Counts = QVector<QPair<QString, int>>;
 
-// Toute la logique métier du module "Gestion des interventions".
-// Aucune dépendance à l'interface graphique => testable seule (exigence « Maintenabilité »).
 class InterventionService {
 public:
     static const QStringList &types();
-    static const QStringList &priorites();   // du moins au plus grave
+    static const QStringList &priorites();
     static const QStringList &statuts();
-    static QStringList transitionsFrom(const QString &statut);   // inclut le statut lui-même
+    static QStringList transitionsFrom(const QString &statut);
 
-    // ----- CRUD + validations -----
+    // CRUD
     static QStringList validate(const Intervention &i, const Intervention *ancien = nullptr);
     static bool add(Intervention &i, QString *err = nullptr);
     static bool update(const Intervention &i, const QString &justification, QString *err = nullptr);
     static bool remove(int id, QString *err = nullptr);
     static bool cancel(int id, QString *err = nullptr);
     static std::optional<Intervention> get(int id);
+    static bool load(int id, Intervention &i);
     static QVector<Intervention> list(const InterventionFilter &f = {}, QString *err = nullptr);
 
-    // ----- 5 métiers avancés -----
-    static PriorityResult recalculerPriorite(int id, bool appliquer = true);     // 1
-    static QVector<Intervention> interventionsEnRetard();                        // 2
-    static QStringList prerequis(const Intervention &i);                         // 3 (vide = prête)
-    static DurationEstimate estimerDuree(const QString &type, int idZone);       // 4
-    static QStringList controleCloture(const Intervention &i);                   // 5
+    // Advanced logic
+    static PriorityResult recalculerPriorite(int id, bool appliquer = true);
+    static QVector<Intervention> interventionsEnRetard(bool onlyLate = false);
+    static QStringList prerequis(const Intervention &i);
+    static bool verifierPrerequis(int id, QString *err = nullptr);
+    static DurationEstimate estimerDuree(const QString &type, int idZone);
+    static QStringList controleCloture(const Intervention &i);
     static bool cloturer(int id, const QString &compteRendu, const QDateTime &fin, QString *err = nullptr);
 
-    // ----- Statistiques, historique, listes de référence -----
+    // Stats & References
     static Counts repartition(const QString &dimension, const InterventionFilter &f = {});
     static QVector<HistoryEntry> historique(int id);
-    static QVector<ZoneItem> zones();
+    static QVector<ZoneItem> zones(bool activeOnly = false);
     static QVector<EmploiItem> emplois();
+    static QString zoneNom(int idZone);
+
+    // UI KPIs
+    static int total();
+    static int enCours();
+    static QVector<Intervention> enRetard();
+    static int critiques();
+    static Counts parStatut();
+    static Counts parPriorite();
+    static Counts parZone();
+    static QVector<IdLabel> equipements();
+    static bool affecterEquipement(int idIntervention, int idEquipement, QString *err = nullptr);
 
 private:
     static void log(int id, const QString &action, const QString &detail);
     static void libererEquipements(int idIntervention);
+
+    static QMap<int, Intervention> s_interventions;
+    static int s_nextId;
 };

@@ -14,6 +14,7 @@ class EquipmentRepository;
 class QChart;
 class QChartView;
 class QPieSeries;
+class QTabWidget;
 
 // ---------------------------------------------------------------
 //  EquipmentPage : interface principale de gestion des équipements

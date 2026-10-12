@@ -13,6 +13,7 @@ class QButtonGroup;
 class QChart;
 class QChartView;
 class QPieSeries;
+class QTabWidget;
 
 struct AgentEmploi {
     int id;

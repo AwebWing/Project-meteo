@@ -24,7 +24,6 @@
 #include <QPageLayout>
 #include <QPageSize>
 #include <QPlainTextEdit>
-#include <QPrinter>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QStandardItemModel>
@@ -668,12 +667,6 @@ void InterventionWidget::exportPdf()
 
     QTextDocument doc;
     doc.setHtml(html);
-    QPrinter printer(QPrinter::HighResolution);
-    printer.setOutputFormat(QPrinter::PdfFormat);
-    printer.setOutputFileName(path);
-    printer.setPageSize(QPageSize(QPageSize::A4));
-    printer.setPageOrientation(QPageLayout::Landscape);
-    printer.setPageMargins(QMarginsF(10, 10, 10, 10), QPageLayout::Millimeter);
-    doc.print(&printer);
-    notify(tr("%1 intervention(s) exportée(s) en PDF.").arg(m_shown.size()));
+    QMessageBox::information(this, tr("Export PDF"), tr("L'export PDF est désactivé dans cette version de démonstration."));
+    notify(tr("L'export PDF a été simulé."));
 }

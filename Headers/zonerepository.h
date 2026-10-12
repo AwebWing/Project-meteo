@@ -9,7 +9,7 @@
 //  Pour l'instant les donnees sont EN MEMOIRE (avec des exemples),
 //  ce qui permet de lancer l'application sans base de donnees.
 //  PLUS TARD : on remplacera l'interieur de ces fonctions par des requetes
-//  QSqlQuery vers MySQL. L'interface (les signatures) ne change pas,
+//  Repository pour la gestion des zones. L'interface (les signatures) ne change pas,
 //  donc les pages n'auront rien a modifier.
 // ============================================================
 class ZoneRepository : public QObject

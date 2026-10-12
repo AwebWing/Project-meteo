@@ -17,10 +17,10 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QStandardItemModel>
-#include <QStackedLayout>
 #include <QStyledItemDelegate>
 #include <QTableView>
 #include <QVBoxLayout>
+#include <QTabWidget>
 
 #include <QChart>
 #include <QChartView>
@@ -107,22 +107,19 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     titleRow->addWidget(pageSub, 1);
     root->addLayout(titleRow);
 
-    // ── KPI row ──────────────────────────────────────────────────
-    auto *kpiRow = new QHBoxLayout;
-    kpiRow->setSpacing(12);
-    kpiRow->addWidget(makeKpiCard("📦", "Total équipements", m_kpiTotal));
-    kpiRow->addWidget(makeKpiCard("✅", "Disponibles",       m_kpiDispo));
-    kpiRow->addWidget(makeKpiCard("🔧", "En maintenance",    m_kpiMaint));
-    kpiRow->addWidget(makeKpiCard("❌", "Hors service",      m_kpiHs));
-    root->addLayout(kpiRow);
+    // ── Tab Widget ─────────────────────────────────────────────
+    auto *tabs = new QTabWidget;
+    tabs->setDocumentMode(true);
 
-    // ── Main 3-column row ─────────────────────────────────────────
-    auto *cols = new QHBoxLayout;
-    cols->setSpacing(12);
+    // ============================================================
+    //  TAB 1: GESTION
+    // ============================================================
+    auto *gestionTab = new QWidget;
+    auto *gestionLayout = new QHBoxLayout(gestionTab);
+    gestionLayout->setContentsMargins(0, 0, 0, 0);
+    gestionLayout->setSpacing(12);
 
-    // ═══════════════════════════════════════════════════════════
-    //  LEFT: Category panel
-    // ═══════════════════════════════════════════════════════════
+    // LEFT: Category panel
     auto *catPanel = new QFrame;
     catPanel->setObjectName("catPanel");
     catPanel->setFixedWidth(210);
@@ -142,7 +139,6 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     m_catGroup = new QButtonGroup(this);
     m_catGroup->setExclusive(true);
 
-    // "Toutes" button (id = -1 means no filter)
     auto *btnAll = new QPushButton(QStringLiteral("🗂   Toutes les catégories"));
     btnAll->setObjectName("catBtn");
     btnAll->setCheckable(true);
@@ -160,30 +156,22 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     }
     catV->addStretch(1);
 
-    // Filter category search
     connect(catSearch, &QLineEdit::textChanged, this, [this, catSearch]() {
-        const QString txt = catSearch->text().trimmed().toLower();
-        // re-filter when user types in category search
-        Q_UNUSED(txt)
         applyFilters();
     });
     connect(m_catGroup, &QButtonGroup::idClicked, this, [this](int) { applyFilters(); });
 
-    cols->addWidget(catPanel);
+    gestionLayout->addWidget(catPanel);
 
-    // ═══════════════════════════════════════════════════════════
-    //  CENTER: Search + Table + Actions
-    // ═══════════════════════════════════════════════════════════
+    // CENTER: Table + Actions
     auto *centerCard = new QFrame;
     centerCard->setObjectName("card");
     auto *centerV = new QVBoxLayout(centerCard);
     centerV->setContentsMargins(14, 12, 14, 12);
     centerV->setSpacing(10);
 
-    // --- Search + statut filter row ---
     auto *filterRow = new QHBoxLayout;
     filterRow->setSpacing(8);
-
     m_search = new QLineEdit;
     m_search->setPlaceholderText("🔍  Rechercher par nom, code, localisation…");
     filterRow->addWidget(m_search, 1);
@@ -194,14 +182,10 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
         m_statutFilter->addItem(s, s);
     m_statutFilter->setFixedWidth(180);
     filterRow->addWidget(m_statutFilter);
-
     centerV->addLayout(filterRow);
 
-    // --- Table ---
     m_model = new QStandardItemModel(0, COL_COUNT, this);
-    m_model->setHorizontalHeaderLabels({
-        "Code", "Nom", "Catégorie", "Statut", "Localisation", "Dernière maintenance"
-    });
+    m_model->setHorizontalHeaderLabels({"Code", "Nom", "Catégorie", "Statut", "Localisation", "Dernière maintenance"});
 
     m_table = new QTableView;
     m_table->setModel(m_model);
@@ -212,7 +196,6 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     m_table->setSortingEnabled(true);
     m_table->setShowGrid(false);
     m_table->verticalHeader()->hide();
-    m_table->horizontalHeader()->setStretchLastSection(false);
     m_table->horizontalHeader()->setSectionResizeMode(COL_NOM,  QHeaderView::Stretch);
     m_table->horizontalHeader()->setSectionResizeMode(COL_CAT,  QHeaderView::ResizeToContents);
     m_table->horizontalHeader()->setSectionResizeMode(COL_STAT, QHeaderView::Fixed);
@@ -221,19 +204,14 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     m_table->horizontalHeader()->setSectionResizeMode(COL_LOC,  QHeaderView::ResizeToContents);
     m_table->horizontalHeader()->setSectionResizeMode(COL_DATE, QHeaderView::ResizeToContents);
     m_table->setItemDelegateForColumn(COL_STAT, new StatutDelegate(this));
-    m_table->setWordWrap(false);
     m_table->setMinimumHeight(300);
-
     centerV->addWidget(m_table, 1);
 
-    // --- Action buttons row ---
     auto *actRow = new QHBoxLayout;
     actRow->setSpacing(8);
-
     auto *btnAdd = new QPushButton(QStringLiteral("➕  Nouvel équipement"));
     btnAdd->setObjectName("primary");
     actRow->addWidget(btnAdd);
-
     actRow->addStretch(1);
 
     m_btnEdit = new QPushButton(QStringLiteral("✏  Modifier"));
@@ -244,81 +222,14 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     m_btnDelete->setObjectName("danger");
     m_btnDelete->setEnabled(false);
     actRow->addWidget(m_btnDelete);
-
     centerV->addLayout(actRow);
-    cols->addWidget(centerCard, 1);
 
-    // ═══════════════════════════════════════════════════════════
-    //  RIGHT: Donut chart + detail panel
-    // ═══════════════════════════════════════════════════════════
-    auto *rightV = new QVBoxLayout;
-    rightV->setSpacing(12);
+    gestionLayout->addWidget(centerCard, 1);
 
-    // --- Donut chart card ---
-    auto *chartCard = new QFrame;
-    chartCard->setObjectName("card");
-    chartCard->setFixedWidth(240);
-    auto *chartCardV = new QVBoxLayout(chartCard);
-    chartCardV->setContentsMargins(14, 12, 14, 12);
-    chartCardV->setSpacing(8);
-
-    auto *chartTitle = new QLabel(QStringLiteral("État du parc"));
-    chartTitle->setObjectName("cardTitle");
-    chartCardV->addWidget(chartTitle);
-
-    // Chart + overlay
-    m_pieSeries = new QPieSeries;
-    m_pieSeries->setHoleSize(0.52);
-    m_pieSeries->setPieSize(0.82);
-
-    auto *chart = new QChart;
-    chart->addSeries(m_pieSeries);
-    chart->setBackgroundBrush(Qt::transparent);
-    chart->setPlotAreaBackgroundBrush(Qt::transparent);
-    chart->setBackgroundRoundness(0);
-    chart->setMargins({0, 0, 0, 0});
-    chart->legend()->hide();
-
-    m_chartView = new QChartView(chart);
-    m_chartView->setRenderHint(QPainter::Antialiasing);
-    m_chartView->setBackgroundBrush(Qt::transparent);
-    m_chartView->setStyleSheet("background: transparent; border: none;");
-    m_chartView->setFixedHeight(190);
-
-    // Overlay center label
-    m_chartCenter = new QLabel(m_chartView);
-    m_chartCenter->setAlignment(Qt::AlignCenter);
-    m_chartCenter->setAttribute(Qt::WA_TransparentForMouseEvents);
-    m_chartCenter->setStyleSheet("background: transparent;");
-    m_chartCenter->setGeometry(0, 0, 240, 190);
-
-    chartCardV->addWidget(m_chartView);
-
-    // Legend rows
-    auto mkLegRow = [&](QLabel *&lbl, const QColor &dot, const QString &txt) {
-        auto *row = new QHBoxLayout;
-        auto *dotLbl = new QLabel;
-        dotLbl->setFixedSize(12, 12);
-        dotLbl->setStyleSheet(
-            QString("background: %1; border-radius: 6px;").arg(dot.name()));
-        lbl = new QLabel(txt);
-        lbl->setObjectName("muted");
-        row->addWidget(dotLbl);
-        row->addWidget(lbl, 1);
-        chartCardV->addLayout(row);
-    };
-
-    mkLegRow(m_legendDispo, QColor(0x3F, 0xC9, 0x8F), "Disponibles");
-    mkLegRow(m_legendMaint, QColor(0xE4, 0x97, 0x40), "En maintenance");
-    mkLegRow(m_legendHs,   QColor(0xE0, 0x5A, 0x5B), "Hors service");
-
-    rightV->addWidget(chartCard);
-
-    // --- Detail panel ---
+    // RIGHT: Detail panel
     QVBoxLayout *detailLayout = nullptr;
     auto *detailCard = makeCard(detailLayout);
     detailCard->setFixedWidth(240);
-
     auto *detailHdr = new QLabel(QStringLiteral("Détail"));
     detailHdr->setObjectName("cardTitle");
     detailLayout->addWidget(detailHdr);
@@ -335,44 +246,117 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     m_detailBody->setAlignment(Qt::AlignTop);
     detailLayout->addWidget(m_detailBody, 1);
 
-    rightV->addWidget(detailCard, 1);
-    cols->addLayout(rightV);
+    gestionLayout->addWidget(detailCard);
 
-    root->addLayout(cols, 1);
+    tabs->addTab(gestionTab, QStringLiteral("Gestion"));
+
+    // ============================================================
+    //  TAB 2: STATISTIQUES
+    // ============================================================
+    auto *statsTab = new QWidget;
+    auto *statsLayout = new QVBoxLayout(statsTab);
+    statsLayout->setContentsMargins(20, 20, 20, 20);
+    statsLayout->setSpacing(20);
+    statsLayout->setAlignment(Qt::AlignCenter);
+
+    // KPI Row
+    auto *kpiRow = new QHBoxLayout;
+    kpiRow->setSpacing(12);
+    kpiRow->addWidget(makeKpiCard("📦", "Total équipements", m_kpiTotal));
+    kpiRow->addWidget(makeKpiCard("✅", "Disponibles",       m_kpiDispo));
+    kpiRow->addWidget(makeKpiCard("🔧", "En maintenance",    m_kpiMaint));
+    kpiRow->addWidget(makeKpiCard("❌", "Hors service",      m_kpiHs));
+
+    auto *kpiContainer = new QWidget;
+    auto *kpiL = new QHBoxLayout(kpiContainer);
+    kpiL->setContentsMargins(0,0,0,0);
+    kpiL->addLayout(kpiRow);
+    statsLayout->addWidget(kpiContainer, 0, Qt::AlignHCenter);
+
+    // Chart Card
+    auto *chartCard = new QFrame;
+    chartCard->setObjectName("card");
+    chartCard->setFixedWidth(300);
+    auto *chartCardV = new QVBoxLayout(chartCard);
+    chartCardV->setContentsMargins(14, 12, 14, 12);
+    chartCardV->setSpacing(8);
+
+    auto *chartTitle = new QLabel(QStringLiteral("État du parc"));
+    chartTitle->setObjectName("cardTitle");
+    chartTitle->setAlignment(Qt::AlignCenter);
+    chartCardV->addWidget(chartTitle);
+
+    m_pieSeries = new QPieSeries;
+    m_pieSeries->setHoleSize(0.52);
+    m_pieSeries->setPieSize(0.82);
+
+    auto *chart = new QChart;
+    chart->addSeries(m_pieSeries);
+    chart->setBackgroundBrush(Qt::transparent);
+    chart->setPlotAreaBackgroundBrush(Qt::transparent);
+    chart->setBackgroundRoundness(0);
+    chart->setMargins({0, 0, 0, 0});
+    chart->legend()->hide();
+
+    m_chartView = new QChartView(chart);
+    m_chartView->setRenderHint(QPainter::Antialiasing);
+    m_chartView->setBackgroundBrush(Qt::transparent);
+    m_chartView->setStyleSheet("background: transparent; border: none;");
+    m_chartView->setFixedHeight(220);
+
+    m_chartCenter = new QLabel(m_chartView);
+    m_chartCenter->setAlignment(Qt::AlignCenter);
+    m_chartCenter->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_chartCenter->setStyleSheet("background: transparent;");
+    m_chartCenter->setGeometry(0, 0, 300, 220);
+
+    chartCardV->addWidget(m_chartView);
+
+    auto mkLegRow = [&](QLabel *&lbl, const QColor &dot, const QString &txt) {
+        auto *row = new QHBoxLayout;
+        auto *dotLbl = new QLabel;
+        dotLbl->setFixedSize(12, 12);
+        dotLbl->setStyleSheet(QString("background: %1; border-radius: 6px;").arg(dot.name()));
+        lbl = new QLabel(txt);
+        lbl->setObjectName("muted");
+        row->addWidget(dotLbl);
+        row->addWidget(lbl, 1);
+        chartCardV->addLayout(row);
+    };
+
+    mkLegRow(m_legendDispo, QColor(0x3F, 0xC9, 0x8F), "Disponibles");
+    mkLegRow(m_legendMaint, QColor(0xE4, 0x97, 0x40), "En maintenance");
+    mkLegRow(m_legendHs,   QColor(0xE0, 0x5A, 0x5B), "Hors service");
+
+    statsLayout->addWidget(chartCard, 0, Qt::AlignHCenter);
+    statsLayout->addStretch(1);
+
+    tabs->addTab(statsTab, QStringLiteral("Statistiques"));
+
+    root->addWidget(tabs, 1);
 
     // ── Connections ─────────────────────────────────────────────
     connect(m_repo, &EquipmentRepository::changed, this, &EquipmentPage::refresh);
-    connect(m_search,       &QLineEdit::textChanged,
-            this, &EquipmentPage::applyFilters);
-    connect(m_statutFilter, &QComboBox::currentIndexChanged,
-            this, &EquipmentPage::applyFilters);
-    connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged,
-            this, &EquipmentPage::updateDetail);
+    connect(m_search,       &QLineEdit::textChanged, this, &EquipmentPage::applyFilters);
+    connect(m_statutFilter, &QComboBox::currentIndexChanged, this, &EquipmentPage::applyFilters);
+    connect(m_table->selectionModel(), &QItemSelectionModel::selectionChanged, this, &EquipmentPage::updateDetail);
     connect(btnAdd,    &QPushButton::clicked, this, &EquipmentPage::onAdd);
     connect(m_btnEdit, &QPushButton::clicked, this, &EquipmentPage::onEdit);
     connect(m_btnDelete,&QPushButton::clicked, this, &EquipmentPage::onDelete);
-
-    // Double-click opens edit dialog
-    connect(m_table, &QTableView::doubleClicked,
-            this, [this](const QModelIndex &) { onEdit(); });
+    connect(m_table, &QTableView::doubleClicked, this, [this](const QModelIndex &) { onEdit(); });
 
     refresh();
 }
 
-// ================================================================
-//  refresh() — reconstruit le modèle depuis le repo
-// ================================================================
 void EquipmentPage::refresh()
 {
     const auto stats = EquipmentService::statistiques(m_repo->all());
 
-    // Update KPIs
     m_kpiTotal->setText(QString::number(stats.total));
     m_kpiDispo->setText(QString::number(stats.disponibles));
     m_kpiMaint->setText(QString::number(stats.enMaintenance));
     m_kpiHs->setText(QString::number(stats.horsService));
 
-    // Update donut chart
     m_pieSeries->clear();
     auto addSlice = [&](int val, const QColor &col) {
         if (val <= 0) return;
@@ -391,7 +375,6 @@ void EquipmentPage::refresh()
                 "</div>").arg(static_cast<int>(stats.pctDisponibles)));
     m_chartCenter->setTextFormat(Qt::RichText);
 
-    // Update chart legend
     m_legendDispo->setText(QString("Disponibles    <b style='color:#e6f1f5'>%1</b>").arg(stats.disponibles));
     m_legendMaint->setText(QString("En maintenance <b style='color:#e6f1f5'>%1</b>").arg(stats.enMaintenance));
     m_legendHs->setText(   QString("Hors service   <b style='color:#e6f1f5'>%1</b>").arg(stats.horsService));
@@ -399,12 +382,11 @@ void EquipmentPage::refresh()
     m_legendMaint->setTextFormat(Qt::RichText);
     m_legendHs->setTextFormat(Qt::RichText);
 
-    // Update category buttons with counts
     const auto counts = EquipmentService::categoryCounts(m_repo->all());
     const auto buttons = m_catGroup->buttons();
     for (auto *btn : buttons) {
         const int bid = m_catGroup->id(btn);
-        if (bid < 0) continue;  // "Toutes"
+        if (bid < 0) continue;
         const QString &cat = EQUIPMENT_CATEGORIES[bid];
         btn->setText(categoryIcon(cat) + QStringLiteral("   ") + cat
                      + QStringLiteral("   (") + QString::number(counts.value(cat)) + ")");
@@ -413,9 +395,6 @@ void EquipmentPage::refresh()
     applyFilters();
 }
 
-// ================================================================
-//  applyFilters() — filtre la vue du tableau
-// ================================================================
 void EquipmentPage::applyFilters()
 {
     const QString search    = m_search->text().trimmed().toLower();
@@ -423,9 +402,7 @@ void EquipmentPage::applyFilters()
     const int     catId     = m_catGroup->checkedId();
     const QString categorie = (catId >= 0) ? EQUIPMENT_CATEGORIES[catId] : QString();
 
-    // Save current selection
     const int prevId = currentId();
-
     m_model->removeRows(0, m_model->rowCount());
 
     const QList<Equipment> all = m_repo->all();
@@ -446,24 +423,17 @@ void EquipmentPage::applyFilters()
             it->setEditable(false);
             return it;
         };
-        row << makeItem(e.code)
-            << makeItem(e.nom)
-            << makeItem(e.categorie)
-            << makeItem(e.statut)
-            << makeItem(e.localisation)
+        row << makeItem(e.code) << makeItem(e.nom) << makeItem(e.categorie)
+            << makeItem(e.statut) << makeItem(e.localisation)
             << makeItem(e.derniereMaintenance.toString("dd/MM/yyyy"));
 
         m_model->appendRow(row);
     }
 
-    // Restore selection
     if (prevId >= 0) selectById(prevId);
     updateDetail();
 }
 
-// ================================================================
-//  updateDetail() — met à jour le panneau de détail
-// ================================================================
 void EquipmentPage::updateDetail()
 {
     const int id = currentId();
@@ -501,9 +471,6 @@ void EquipmentPage::updateDetail()
     m_detailBody->setText(body);
 }
 
-// ================================================================
-//  CRUD actions
-// ================================================================
 void EquipmentPage::onAdd()
 {
     EquipmentDialog dlg(m_repo, Equipment{}, this);
@@ -546,9 +513,6 @@ void EquipmentPage::onDelete()
         QMessageBox::critical(this, QStringLiteral("Erreur"), err);
 }
 
-// ================================================================
-//  Helpers
-// ================================================================
 int EquipmentPage::currentId() const
 {
     const QModelIndexList sel = m_table->selectionModel()->selectedRows();

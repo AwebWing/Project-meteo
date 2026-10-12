@@ -19,6 +19,7 @@
 #include <QStyledItemDelegate>
 #include <QTableView>
 #include <QVBoxLayout>
+#include <QTabWidget>
 
 #include <QChart>
 #include <QChartView>
@@ -79,18 +80,17 @@ EmploiPage::EmploiPage(QWidget *parent) : QWidget(parent)
     titleRow->addWidget(pageSub, 1);
     root->addLayout(titleRow);
 
-    // KPI Cards
-    auto *kpiRow = new QHBoxLayout;
-    kpiRow->setSpacing(12);
-    kpiRow->addWidget(makeKpiCard("👥", "Total Agents", m_kpiTotal));
-    kpiRow->addWidget(makeKpiCard("⚡", "En service", m_kpiService));
-    kpiRow->addWidget(makeKpiCard("✅", "Disponibles", m_kpiDispo));
-    kpiRow->addWidget(makeKpiCard("🏖", "En congé", m_kpiConge));
-    root->addLayout(kpiRow);
+    // Tab Widget
+    auto *tabs = new QTabWidget;
+    tabs->setDocumentMode(true);
 
-    // Main 3-column layout
-    auto *cols = new QHBoxLayout;
-    cols->setSpacing(12);
+    // ============================================================
+    //  TAB 1: GESTION
+    // ============================================================
+    auto *gestionTab = new QWidget;
+    auto *gestionLayout = new QHBoxLayout(gestionTab);
+    gestionLayout->setContentsMargins(0, 0, 0, 0);
+    gestionLayout->setSpacing(12);
 
     // LEFT: Role filter sidebar
     auto *rolePanel = new QFrame;
@@ -119,7 +119,7 @@ EmploiPage::EmploiPage(QWidget *parent) : QWidget(parent)
     roleV->addStretch(1);
     connect(m_roleGroup, &QButtonGroup::idClicked, this, [this](int) { applyFilters(); });
 
-    cols->addWidget(rolePanel);
+    gestionLayout->addWidget(rolePanel);
 
     // CENTER: Table & Filters
     auto *centerCard = new QFrame;
@@ -161,7 +161,6 @@ EmploiPage::EmploiPage(QWidget *parent) : QWidget(parent)
     m_table->setMinimumHeight(300);
     centerV->addWidget(m_table, 1);
 
-    // Action buttons
     auto *actRow = new QHBoxLayout;
     auto *btnAdd = new QPushButton(QStringLiteral("➕  Nouvel agent"));
     btnAdd->setObjectName("primary");
@@ -176,50 +175,10 @@ EmploiPage::EmploiPage(QWidget *parent) : QWidget(parent)
     m_btnDelete->setObjectName("danger");
     m_btnDelete->setEnabled(false);
     actRow->addWidget(m_btnDelete);
-
     centerV->addLayout(actRow);
-    cols->addWidget(centerCard, 1);
+    gestionLayout->addWidget(centerCard, 1);
 
-    // RIGHT: Donut Chart & Details
-    auto *rightV = new QVBoxLayout;
-    rightV->setSpacing(12);
-
-    auto *chartCard = new QFrame;
-    chartCard->setObjectName("card");
-    chartCard->setFixedWidth(240);
-    auto *chartV = new QVBoxLayout(chartCard);
-    chartV->setContentsMargins(14, 12, 14, 12);
-    chartV->setSpacing(8);
-
-    auto *chartTitle = new QLabel(QStringLiteral("Disponibilité des équipes"));
-    chartTitle->setObjectName("cardTitle");
-    chartV->addWidget(chartTitle);
-
-    m_pieSeries = new QPieSeries;
-    m_pieSeries->setHoleSize(0.52);
-    m_pieSeries->setPieSize(0.82);
-
-    auto *chart = new QChart;
-    chart->addSeries(m_pieSeries);
-    chart->setBackgroundBrush(Qt::transparent);
-    chart->setMargins({0, 0, 0, 0});
-    chart->legend()->hide();
-
-    m_chartView = new QChartView(chart);
-    m_chartView->setRenderHint(QPainter::Antialiasing);
-    m_chartView->setBackgroundBrush(Qt::transparent);
-    m_chartView->setFixedHeight(180);
-
-    m_chartCenter = new QLabel(m_chartView);
-    m_chartCenter->setAlignment(Qt::AlignCenter);
-    m_chartCenter->setAttribute(Qt::WA_TransparentForMouseEvents);
-    m_chartCenter->setStyleSheet("color: white; font-size: 16px; font-weight: 700; background: transparent;");
-    m_chartCenter->setGeometry(0, 0, 240, 180);
-
-    chartV->addWidget(m_chartView);
-    rightV->addWidget(chartCard);
-
-    // Details panel
+    // RIGHT: Details
     QVBoxLayout *detailL = nullptr;
     auto *detailCard = makeCard(detailL);
     detailCard->setFixedWidth(240);
@@ -236,10 +195,74 @@ EmploiPage::EmploiPage(QWidget *parent) : QWidget(parent)
     m_detailBody->setWordWrap(true);
     m_detailBody->setObjectName("muted");
     detailL->addWidget(m_detailBody, 1);
+    gestionLayout->addWidget(detailCard);
 
-    rightV->addWidget(detailCard, 1);
-    cols->addLayout(rightV);
-    root->addLayout(cols, 1);
+    tabs->addTab(gestionTab, QStringLiteral("Gestion"));
+
+    // ============================================================
+    //  TAB 2: STATISTIQUES
+    // ============================================================
+    auto *statsTab = new QWidget;
+    auto *statsLayout = new QVBoxLayout(statsTab);
+    statsLayout->setContentsMargins(20, 20, 20, 20);
+    statsLayout->setSpacing(20);
+    statsLayout->setAlignment(Qt::AlignCenter);
+
+    // KPI Row
+    auto *kpiRow = new QHBoxLayout;
+    kpiRow->setSpacing(12);
+    kpiRow->addWidget(makeKpiCard("👥", "Total Agents", m_kpiTotal));
+    kpiRow->addWidget(makeKpiCard("⚡", "En service", m_kpiService));
+    kpiRow->addWidget(makeKpiCard("✅", "Disponibles", m_kpiDispo));
+    kpiRow->addWidget(makeKpiCard("🏖", "En congé", m_kpiConge));
+
+    auto *kpiContainer = new QWidget;
+    auto *kpiL = new QHBoxLayout(kpiContainer);
+    kpiL->setContentsMargins(0,0,0,0);
+    kpiL->addLayout(kpiRow);
+    statsLayout->addWidget(kpiContainer, 0, Qt::AlignHCenter);
+
+    // Chart Card
+    auto *chartCard = new QFrame;
+    chartCard->setObjectName("card");
+    chartCard->setFixedWidth(300);
+    auto *chartV = new QVBoxLayout(chartCard);
+    chartV->setContentsMargins(14, 12, 14, 12);
+    chartV->setSpacing(8);
+
+    auto *chartTitle = new QLabel(QStringLiteral("Disponibilité des équipes"));
+    chartTitle->setObjectName("cardTitle");
+    chartTitle->setAlignment(Qt::AlignCenter);
+    chartV->addWidget(chartTitle);
+
+    m_pieSeries = new QPieSeries;
+    m_pieSeries->setHoleSize(0.52);
+    m_pieSeries->setPieSize(0.82);
+
+    auto *chart = new QChart;
+    chart->addSeries(m_pieSeries);
+    chart->setBackgroundBrush(Qt::transparent);
+    chart->setMargins({0, 0, 0, 0});
+    chart->legend()->hide();
+
+    m_chartView = new QChartView(chart);
+    m_chartView->setRenderHint(QPainter::Antialiasing);
+    m_chartView->setBackgroundBrush(Qt::transparent);
+    m_chartView->setFixedHeight(220);
+
+    m_chartCenter = new QLabel(m_chartView);
+    m_chartCenter->setAlignment(Qt::AlignCenter);
+    m_chartCenter->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_chartCenter->setStyleSheet("color: white; font-size: 16px; font-weight: 700; background: transparent;");
+    m_chartCenter->setGeometry(0, 0, 300, 220);
+
+    chartV->addWidget(m_chartView);
+    statsLayout->addWidget(chartCard, 0, Qt::AlignHCenter);
+    statsLayout->addStretch(1);
+
+    tabs->addTab(statsTab, QStringLiteral("Statistiques"));
+
+    root->addWidget(tabs, 1);
 
     // Connections
     connect(m_search, &QLineEdit::textChanged, this, &EmploiPage::applyFilters);
@@ -452,8 +475,8 @@ void EmploiPage::onDeleteAgent() {
     int id = currentId();
     if (id < 0) return;
 
-    if (QMessageBox::question(this, "Supprimer agent", "Voulez-vous vraiment supprimer cet agent ?",
-                              QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
+    if (QMessageBox::question(this, "Supprimer agent", "Vouzel-vous vraiment supprimer cet agent ?",
+                                                            QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
         for (int i = 0; i < m_agents.size(); ++i) {
             if (m_agents[i].id == id) { m_agents.removeAt(i); break; }
         }

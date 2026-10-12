@@ -1,6 +1,6 @@
 #pragma once
 #include <QMainWindow>
-#include <QSqlQueryModel>
+#include <QStandardItemModel>
 
 class QSortFilterProxyModel;
 
@@ -40,6 +40,6 @@ private:
     void populateFilters();
 
     Ui::InterventionsWindow *ui;
-    QSqlQueryModel m_model;
+    QStandardItemModel m_model;
     QSortFilterProxyModel *m_proxy;
 };
