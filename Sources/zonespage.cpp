@@ -19,6 +19,7 @@
 #include <QTextDocument>
 #include <QStringConverter>
 #include <QTextStream>
+#include <QTimer>
 #include <QVBoxLayout>
 
 #include "mapwidget.h"
@@ -190,6 +191,14 @@ ZonesPage::ZonesPage(ZoneRepository *repo, QWidget *parent) : QWidget(parent), m
     connect(m_repo, &ZoneRepository::changed, this, &ZonesPage::refresh);
 
     refresh();
+
+    // Echec du chargement (ex. table ZONE absente) : on le dit au lieu d'afficher une liste vide
+    if (!m_repo->lastError().isEmpty())
+        QTimer::singleShot(0, this, [this] {
+            QMessageBox::warning(this, QStringLiteral("Chargement des zones impossible"),
+                QStringLiteral("%1\n\nVérifiez que le script SQL/zones_oracle.sql a bien été exécuté "
+                               "avec l'utilisateur de la source ODBC (meteo).").arg(m_repo->lastError()));
+        });
 }
 
 // ------------------------------------------------------------
@@ -308,10 +317,15 @@ void ZonesPage::updateDetail()
 void ZonesPage::onAdd()
 {
     ZoneDialog dlg(m_repo->all(), nullptr, this);
-    if (dlg.exec() == QDialog::Accepted) {
-        const int id = m_repo->add(dlg.zone());
-        selectZoneById(id);
+    if (dlg.exec() != QDialog::Accepted) return;
+
+    const int id = m_repo->add(dlg.zone());
+    if (id < 0) {
+        QMessageBox::critical(this, QStringLiteral("Ajout non effectué"), m_repo->lastError());
+        return;
     }
+    selectZoneById(id);   // le tableau est deja rafraichi (signal changed)
+    QMessageBox::information(this, QStringLiteral("OK"), QStringLiteral("Ajout effectué."));
 }
 
 void ZonesPage::onEdit()
@@ -319,7 +333,12 @@ void ZonesPage::onEdit()
     const auto zone = m_repo->find(currentZoneId());
     if (!zone) return;
     ZoneDialog dlg(m_repo->all(), &*zone, this);
-    if (dlg.exec() == QDialog::Accepted) m_repo->update(dlg.zone());
+    if (dlg.exec() != QDialog::Accepted) return;
+
+    if (m_repo->update(dlg.zone()))
+        QMessageBox::information(this, QStringLiteral("OK"), QStringLiteral("Modification effectuée."));
+    else
+        QMessageBox::critical(this, QStringLiteral("Modification non effectuée"), m_repo->lastError());
 }
 
 void ZonesPage::onDelete()
@@ -332,16 +351,20 @@ void ZonesPage::onDelete()
     if (rep != QMessageBox::Yes) return;
 
     QString erreur;
-    if (!m_repo->remove(zone->id, &erreur)) {
-        // Regle du cahier : pas de suppression si des donnees dependent de la zone -> on propose la desactivation
-        const auto r2 = QMessageBox::question(this, QStringLiteral("Suppression impossible"),
-            erreur + QStringLiteral("\n\nVoulez-vous la désactiver à la place ?"));
-        if (r2 == QMessageBox::Yes) {
-            Zone z = *zone;
-            z.statut = QStringLiteral("Inactive");
-            m_repo->update(z);
-        }
+    if (m_repo->remove(zone->id, &erreur)) {
+        QMessageBox::information(this, QStringLiteral("OK"), QStringLiteral("Suppression effectuée."));
+        return;
     }
+
+    // Regle du cahier : pas de suppression si des donnees dependent de la zone -> on propose la desactivation
+    const auto r2 = QMessageBox::question(this, QStringLiteral("Suppression impossible"),
+        erreur + QStringLiteral("\n\nVoulez-vous la désactiver à la place ?"));
+    if (r2 != QMessageBox::Yes) return;
+
+    Zone z = *zone;
+    z.statut = QStringLiteral("Inactive");
+    if (!m_repo->update(z))
+        QMessageBox::critical(this, QStringLiteral("Modification non effectuée"), m_repo->lastError());
 }
 
 void ZonesPage::onDetails()

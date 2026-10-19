@@ -5,9 +5,14 @@
 #include "equipment.h"
 
 // ============================================================
-//  EquipmentRepository : couche données (en mémoire).
-//  Pour passer à MySQL : seuls les corps des fonctions changent ;
-//  les signatures — et donc les pages UI — restent identiques.
+//  EquipmentRepository : couche entre les pages (vue) et l'entité
+//  Equipment (modèle Oracle).
+//  - Aucune requête SQL ici : tout passe par Equipment::ajouter /
+//    modifier / supprimer / afficher (Sources/equipment.cpp).
+//  - Garde en mémoire la dernière liste lue et se recharge après
+//    chaque ajout / modification / suppression.
+//  - Émet changed() après chaque modification : les pages se
+//    rafraîchissent automatiquement.
 // ============================================================
 class EquipmentRepository : public QObject
 {
@@ -17,23 +22,18 @@ public:
 
     QList<Equipment>         all()    const { return m_equipments; }
     std::optional<Equipment> find(int id)   const;
-    int                      add(Equipment eq);           // retourne le nouvel id
+    int                      add(Equipment eq);           // retourne le nouvel id, ou -1
     bool                     update(const Equipment &eq); // historise les changements
     bool                     remove(int id, QString *erreur = nullptr);
     QList<EquipmentHistory>  history(int idEquipment) const;
+    bool                     reload();                    // relit la table EQUIPEMENT
+
+    QString lastError() const { return m_lastError; }
 
 signals:
     void changed();  // émis à chaque modification → les vues se rafraîchissent
 
 private:
-    void loadSamples();
-    void log(int idEquipment,
-             const QString &champ,
-             const QString &ancien,
-             const QString &nouveau,
-             const QDateTime &date = QDateTime::currentDateTime());
-
-    QList<Equipment>        m_equipments;
-    QList<EquipmentHistory> m_history;
-    int                     m_nextId = 1;
+    QList<Equipment> m_equipments;
+    QString          m_lastError;
 };

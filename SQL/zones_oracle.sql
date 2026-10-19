@@ -1,0 +1,99 @@
+-- ============================================================
+--  Smart Weather - Module "Gestion des Zones" (Adem Nouioui)
+--  Script Oracle 11g XE  -  a executer avec l'utilisateur METEO
+--  (SQL Developer : ouvrir ce fichier, puis "Executer le script" = F5)
+--
+--  Tables creees : ZONE, ZONE_HISTORIQUE
+--  Les tables STATION (Tasnim) et INTERVENTION (Bader) referenceront
+--  ZONE(ID_ZONE) par une cle etrangere : voir la fin du fichier.
+-- ============================================================
+
+-- ---------- (optionnel) repartir de zero ----------
+-- DROP TABLE ZONE_HISTORIQUE CASCADE CONSTRAINTS;
+-- DROP TABLE ZONE CASCADE CONSTRAINTS;
+-- DROP SEQUENCE SEQ_ZONE;
+-- DROP SEQUENCE SEQ_ZONE_HISTORIQUE;
+
+-- ---------- Sequences (auto-increment sous Oracle 11g) ----------
+CREATE SEQUENCE SEQ_ZONE            START WITH 1 INCREMENT BY 1 NOCACHE;
+CREATE SEQUENCE SEQ_ZONE_HISTORIQUE START WITH 1 INCREMENT BY 1 NOCACHE;
+
+-- ---------- Table ZONE ----------
+CREATE TABLE ZONE (
+    ID_ZONE        NUMBER(10)    NOT NULL,
+    NOM            VARCHAR2(100) NOT NULL,
+    CODE           VARCHAR2(20)  NOT NULL,
+    VULNERABILITE  NUMBER(4,1)   DEFAULT 0 NOT NULL,
+    LATITUDE       NUMBER(9,6)   DEFAULT 36.8065 NOT NULL,
+    LONGITUDE      NUMBER(9,6)   DEFAULT 10.1815 NOT NULL,
+    STATUT         VARCHAR2(10)  DEFAULT 'Active' NOT NULL,
+    CONSTRAINT PK_ZONE        PRIMARY KEY (ID_ZONE),
+    CONSTRAINT UQ_ZONE_CODE   UNIQUE (CODE),
+    CONSTRAINT CK_ZONE_VULN   CHECK (VULNERABILITE BETWEEN 0 AND 100),
+    CONSTRAINT CK_ZONE_LAT    CHECK (LATITUDE  BETWEEN -90  AND 90),
+    CONSTRAINT CK_ZONE_LON    CHECK (LONGITUDE BETWEEN -180 AND 180),
+    CONSTRAINT CK_ZONE_STATUT CHECK (STATUT IN ('Active', 'Inactive'))
+);
+
+-- ---------- Table ZONE_HISTORIQUE (metier 5 : historique d'evolution) ----------
+CREATE TABLE ZONE_HISTORIQUE (
+    ID_HIST         NUMBER(10)     NOT NULL,
+    ID_ZONE         NUMBER(10)     NOT NULL,
+    DATE_CHANGEMENT DATE           DEFAULT SYSDATE NOT NULL,
+    CHAMP           VARCHAR2(50)   NOT NULL,
+    ANCIENNE_VALEUR VARCHAR2(200),
+    NOUVELLE_VALEUR VARCHAR2(200),
+    CONSTRAINT PK_ZONE_HISTORIQUE PRIMARY KEY (ID_HIST),
+    CONSTRAINT FK_HIST_ZONE FOREIGN KEY (ID_ZONE)
+        REFERENCES ZONE (ID_ZONE) ON DELETE CASCADE
+);
+
+CREATE INDEX IDX_HIST_ZONE ON ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT);
+
+-- ---------- Triggers : cle primaire automatique si non fournie ----------
+CREATE OR REPLACE TRIGGER TRG_ZONE_ID
+BEFORE INSERT ON ZONE
+FOR EACH ROW
+WHEN (NEW.ID_ZONE IS NULL)
+BEGIN
+    SELECT SEQ_ZONE.NEXTVAL INTO :NEW.ID_ZONE FROM DUAL;
+END;
+/
+
+CREATE OR REPLACE TRIGGER TRG_ZONE_HISTORIQUE_ID
+BEFORE INSERT ON ZONE_HISTORIQUE
+FOR EACH ROW
+WHEN (NEW.ID_HIST IS NULL)
+BEGIN
+    SELECT SEQ_ZONE_HISTORIQUE.NEXTVAL INTO :NEW.ID_HIST FROM DUAL;
+END;
+/
+
+-- ---------- Jeu de donnees de demonstration ----------
+INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (1, 'Tunis Centre', 'ZN-01', 62, 36.8065, 10.1815, 'Active');
+INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (2, 'Ariana',       'ZN-02', 48, 36.8665, 10.1647, 'Active');
+INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (3, 'Ben Arous',    'ZN-03', 71, 36.7531, 10.2189, 'Active');
+INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (4, 'Manouba',      'ZN-04', 35, 36.8101, 10.0863, 'Active');
+INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (5, 'Bizerte',      'ZN-05', 55, 37.2744,  9.8739, 'Active');
+INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (6, 'Nabeul',       'ZN-06', 40, 36.4513, 10.7357, 'Active');
+
+INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR) VALUES (3, TO_DATE('2026-09-01 09:00', 'YYYY-MM-DD HH24:MI'), 'Vulnérabilité', '65', '71');
+INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR) VALUES (3, TO_DATE('2026-09-04 09:00', 'YYYY-MM-DD HH24:MI'), 'Statut', 'Inactive', 'Active');
+INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR) VALUES (5, TO_DATE('2026-09-07 09:00', 'YYYY-MM-DD HH24:MI'), 'Vulnérabilité', '50', '55');
+
+-- Les inserts explicites ont utilise les ids 1 a 6 : la sequence reprend a 7.
+DROP SEQUENCE SEQ_ZONE;
+CREATE SEQUENCE SEQ_ZONE START WITH 7 INCREMENT BY 1 NOCACHE;
+
+COMMIT;
+
+-- ============================================================
+--  A executer PLUS TARD, quand les autres membres auront cree leurs tables
+--  (la suppression d'une zone referencee sera alors refusee par Oracle :
+--   ORA-02292, geree par l'application qui propose la desactivation) :
+--
+--  ALTER TABLE STATION      ADD CONSTRAINT FK_STATION_ZONE
+--      FOREIGN KEY (ID_ZONE) REFERENCES ZONE (ID_ZONE);
+--  ALTER TABLE INTERVENTION ADD CONSTRAINT FK_INTERVENTION_ZONE
+--      FOREIGN KEY (ID_ZONE) REFERENCES ZONE (ID_ZONE);
+-- ============================================================

@@ -3,7 +3,7 @@
 Projet Qt 6 (Widgets + Charts) — C++17.
 
 ## Lancer
-1. Qt Creator -> File -> Open File or Project -> choisir `CMakeLists.txt`
+1. Qt Creator -> File -> Open File or Project -> choisir `SmartWeather.pro`
 2. Kit : Qt 6.7.3 MinGW 64-bit -> Configure Project
 3. Ctrl+R
 
@@ -25,6 +25,12 @@ Projet Qt 6 (Widgets + Charts) — C++17.
 | coveragepage.* | interface "Analyse couverture" + graphiques |
 | mapwidget.* | carte dessinee a la main |
 
-## Passage a MySQL (plus tard)
-Seul `zonerepository.cpp` change : chaque fonction (`all`, `add`, `update`, `remove`, `history`)
-devra utiliser `QSqlQuery`. Ajouter `Sql` dans `find_package(Qt6 ... )` et `target_link_libraries`.
+## Base de donnees (Oracle)
+1. Source ODBC 64 bits `smartweatherDSN` (utilisateur `meteo`) -- voir l'atelier Connexion Oracle/Qt.
+2. Executer `SQL/zones_oracle.sql` dans SQL Developer (tables ZONE et ZONE_HISTORIQUE + donnees de demo).
+3. Lancer l'application : `main.cpp` ouvre la connexion (Singleton `Connection`) avant la fenetre principale.
+
+Architecture modele-vue : toutes les requetes (preparees) de l'entite Zone sont dans `Sources/zone.cpp`
+(`ajouter`, `modifier`, `supprimer`, `afficher`). `ZoneRepository` n'a aucune requete : il appelle `Zone`,
+garde la liste en memoire et emet `changed()` pour rafraichir les pages.
+Modeles (MCD / MLD / MPD) : `docs/MODELE_DONNEES.md`.

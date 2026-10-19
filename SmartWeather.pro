@@ -1,4 +1,4 @@
-QT       += core gui widgets charts
+QT       += core gui widgets charts sql
 
 TARGET   = SmartWeather
 TEMPLATE = app
@@ -10,7 +10,9 @@ INCLUDEPATH += Headers
 
 # Source files
 SOURCES += \
+    Sources/connection.cpp \
     Sources/main.cpp \
+    Sources/zone.cpp \
     Sources/mainwindow.cpp \
     Sources/accueilpage.cpp \
     Sources/zonespage.cpp \
@@ -27,6 +29,7 @@ SOURCES += \
     Sources/equipmentpage.cpp \
     Sources/equipmentdialog.cpp \
     Sources/equipmentservice.cpp \
+    Sources/equipment.cpp \
     Sources/equipmentrepository.cpp \
     Sources/database.cpp \
     Sources/chartwidget.cpp \
@@ -37,6 +40,7 @@ SOURCES += \
 
 # Header files
 HEADERS += \
+    Headers/connection.h \
     Headers/mainwindow.h \
     Headers/accueilpage.h \
     Headers/zonespage.h \
