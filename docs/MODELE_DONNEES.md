@@ -112,8 +112,8 @@ Ces listes de valeurs sont celles du code C++ (`equipment.h`, `fournisseur.h`, `
 en ajouter une dans le code impose de modifier la contrainte `CHECK` correspondante (sinon Oracle répond ORA-02290).
 
 Oracle 11g n'a pas de colonnes `IDENTITY` : l'auto-incrémentation = séquence (`SEQ_<TABLE>`) + trigger
-`BEFORE INSERT` (`TRG_*_ID`). L'application lit elle-même `SEQ_<TABLE>.NEXTVAL` pour connaître l'identifiant avant
-d'écrire l'historique ; le trigger sert aux insertions manuelles dans SQL Developer.
+`BEFORE INSERT` (`TRG_*_ID`). L'application lit elle-même `SEQ_<TABLE>.NEXTVAL` pour connaître l'identifiant de la ligne
+insérée ; le trigger sert aux insertions manuelles dans SQL Developer.
 
 ## 4. Correspondance avec le code (architecture modèle-vue)
 
