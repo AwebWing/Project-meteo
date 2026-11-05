@@ -45,7 +45,7 @@ private:
 //    - KPI row (actifs / note moyenne / contrats à renouveler / délai moyen)
 //    - Panneau types (gauche)
 //    - Tableau CRUD avec recherche + filtre statut (centre)
-//    - Panneau détail + historique (droite)
+//    - Panneau détail (droite)
 // ---------------------------------------------------------------
 class SmartSupply : public QWidget
 {
@@ -92,7 +92,7 @@ private:
     QLabel      *m_sugRes;
 
     // Panneau détail
-    QLabel *m_detailTitle, *m_detailBody, *m_histBody;
+    QLabel *m_detailTitle, *m_detailBody;
 };
 
 #endif // SMARTSUPPLY_H

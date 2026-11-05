@@ -3,7 +3,7 @@
 --  Oracle 11g XE - à exécuter avec l'utilisateur METEO
 --  (SQL Developer : ouvrir ce fichier, puis "Exécuter le script" = F5)
 --
---  Tables      : AGENT, AGENT_HISTORIQUE
+--  Tables      : AGENT
 --  Prérequis   : zones_oracle.sql (clé étrangère AGENT.ID_ZONE -> ZONE)
 --  Re-exécutable : OUI - supprime puis recrée ses objets (supprimer AGENT
 --                seule retire aussi la clé étrangère de INTERVENTION.ID_AGENT :
@@ -18,11 +18,11 @@ SET DEFINE OFF
 -- ---------- Nettoyage (aucune erreur si les objets n'existent pas) ----------
 BEGIN
     FOR t IN (SELECT table_name FROM user_tables
-              WHERE table_name IN ('AGENT_HISTORIQUE', 'AGENT')) LOOP
+              WHERE table_name IN ('AGENT')) LOOP
         EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS PURGE';
     END LOOP;
     FOR s IN (SELECT sequence_name FROM user_sequences
-              WHERE sequence_name IN ('SEQ_AGENT', 'SEQ_AGENT_HISTORIQUE')) LOOP
+              WHERE sequence_name IN ('SEQ_AGENT')) LOOP
         EXECUTE IMMEDIATE 'DROP SEQUENCE ' || s.sequence_name;
     END LOOP;
 END;
@@ -30,7 +30,6 @@ END;
 
 -- ---------- Séquences (auto-incrément sous Oracle 11g) ----------
 CREATE SEQUENCE SEQ_AGENT            START WITH 1 INCREMENT BY 1 NOCACHE;
-CREATE SEQUENCE SEQ_AGENT_HISTORIQUE START WITH 1 INCREMENT BY 1 NOCACHE;
 
 -- ---------- Table AGENT ----------
 CREATE TABLE AGENT (
@@ -55,22 +54,6 @@ CREATE TABLE AGENT (
 -- de zone parcourt toute la table AGENT.
 CREATE INDEX IDX_AGENT_ZONE ON AGENT (ID_ZONE);
 
--- ---------- Table AGENT_HISTORIQUE ----------
-CREATE TABLE AGENT_HISTORIQUE (
-    ID_HIST          NUMBER(10)     NOT NULL,
-    ID_AGENT         NUMBER(10)     NOT NULL,
-    DATE_CHANGEMENT  DATE           DEFAULT SYSDATE NOT NULL,
-    CHAMP            VARCHAR2(50)   NOT NULL,
-    ANCIENNE_VALEUR  VARCHAR2(200),
-    NOUVELLE_VALEUR  VARCHAR2(200),
-    CONSTRAINT PK_AGENT_HISTORIQUE PRIMARY KEY (ID_HIST),
-    CONSTRAINT FK_HIST_AGENT FOREIGN KEY (ID_AGENT)
-        REFERENCES AGENT (ID_AGENT) ON DELETE CASCADE
-);
-
--- Sert aussi d'index à la clé étrangère (ID_AGENT en tête).
-CREATE INDEX IDX_HIST_AGENT ON AGENT_HISTORIQUE (ID_AGENT, DATE_CHANGEMENT);
-
 -- ---------- Triggers : clé primaire automatique si non fournie ----------
 CREATE OR REPLACE TRIGGER TRG_AGENT_ID
 BEFORE INSERT ON AGENT
@@ -78,15 +61,6 @@ FOR EACH ROW
 WHEN (NEW.ID_AGENT IS NULL)
 BEGIN
     :NEW.ID_AGENT := SEQ_AGENT.NEXTVAL;
-END;
-/
-
-CREATE OR REPLACE TRIGGER TRG_AGENT_HIST_ID
-BEFORE INSERT ON AGENT_HISTORIQUE
-FOR EACH ROW
-WHEN (NEW.ID_HIST IS NULL)
-BEGIN
-    :NEW.ID_HIST := SEQ_AGENT_HISTORIQUE.NEXTVAL;
 END;
 /
 
@@ -108,12 +82,5 @@ INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
 VALUES ('Ghandour',  'Aweb',    'Agent de terrain', 'En service', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-06'), 'Matin (06h-14h)');
 INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
 VALUES ('Eddine',    'Bader',   'Superviseur',      'Formation',  (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-02'), 'Après-midi (14h-22h)');
-
--- Historique : une ligne "Création" par agent + un changement de statut.
-INSERT INTO AGENT_HISTORIQUE (ID_AGENT, DATE_CHANGEMENT, CHAMP, NOUVELLE_VALEUR)
-SELECT ID_AGENT, TRUNC(SYSDATE) - 60 + 9/24, 'Création', PRENOM || ' ' || NOM FROM AGENT;
-
-INSERT INTO AGENT_HISTORIQUE (ID_AGENT, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR)
-SELECT ID_AGENT, TRUNC(SYSDATE) - 10 + 9/24, 'Statut', 'En service', 'En congé' FROM AGENT WHERE NOM = 'Nouioui' AND PRENOM = 'Adem';
 
 COMMIT;

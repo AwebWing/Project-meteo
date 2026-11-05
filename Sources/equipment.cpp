@@ -1,5 +1,4 @@
 #include "equipment.h"
-#include "dbhelpers.h"
 
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -43,27 +42,6 @@ bool run(QSqlQuery &q, QString *erreur)
     return fail(erreur, q.lastError());
 }
 
-using DbHelpers::Transaction;
-
-// ------------------------------------------------------------
-//  Historique interne
-// ------------------------------------------------------------
-bool logChange(int idEquipment, const QString &champ,
-               const QString &ancien, const QString &nouveau,
-               QString *erreur)
-{
-    QSqlQuery q;
-    q.prepare(QStringLiteral(
-        "INSERT INTO EQUIPEMENT_HISTORIQUE "
-        "(ID_EQUIPEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR) "
-        "VALUES (:id, :champ, :ancien, :nouveau)"));
-    q.bindValue(QStringLiteral(":id"),     idEquipment);
-    q.bindValue(QStringLiteral(":champ"),  champ);
-    q.bindValue(QStringLiteral(":ancien"), ancien);
-    q.bindValue(QStringLiteral(":nouveau"),nouveau);
-    return run(q, erreur);
-}
-
 Equipment lireEquipment(const QSqlQuery &q)
 {
     Equipment e;
@@ -89,8 +67,6 @@ Equipment lireEquipment(const QSqlQuery &q)
 // ============================================================
 bool Equipment::ajouter(QString *erreur)
 {
-    Transaction tx;
-
     // 1) Nouvelle clé primaire (séquence Oracle)
     QSqlQuery seq;
     seq.prepare(QStringLiteral("SELECT SEQ_EQUIPEMENT.NEXTVAL FROM DUAL"));
@@ -117,10 +93,6 @@ bool Equipment::ajouter(QString *erreur)
     q.bindValue(QStringLiteral(":fourn"),  idFournisseur);
     if (!run(q, erreur)) return false;
 
-    // 3) Historique de création (métier 5)
-    if (!logChange(nouvelId, QStringLiteral("Création"), QString(), nom, erreur)) return false;
-
-    if (!tx.commit()) return fail(erreur, QSqlDatabase::database().lastError());
     id = nouvelId;
     return true;
 }
@@ -159,23 +131,7 @@ QList<QPair<int, QString>> Equipment::fournisseurs(QString *erreur)
 // ============================================================
 bool Equipment::modifier(QString *erreur) const
 {
-    Transaction tx;
-
-    // 1) Valeurs actuelles (pour détecter les champs modifiés → historique)
-    QSqlQuery old;
-    old.prepare(QStringLiteral(
-        "SELECT E.ID_EQUIPEMENT, E.NOM, E.CODE, E.CATEGORIE, E.STATUT, E.LOCALISATION, E.DERNIERE_MAINT, "
-        "E.DESCRIPTION, E.ID_FOURNISSEUR, F.NOM "
-        "FROM EQUIPEMENT E JOIN FOURNISSEUR F ON F.ID_FOURNISSEUR = E.ID_FOURNISSEUR WHERE E.ID_EQUIPEMENT = :id"));
-    old.bindValue(QStringLiteral(":id"), id);
-    if (!run(old, erreur)) return false;
-    if (!old.next()) {
-        if (erreur) *erreur = QStringLiteral("Équipement introuvable.");
-        return false;
-    }
-    const Equipment avant = lireEquipment(old);
-
-    // 2) Mise à jour
+    // Mise à jour (requête préparée)
     QSqlQuery q;
     q.prepare(QStringLiteral(
         "UPDATE EQUIPEMENT SET NOM = :nom, CODE = :code, CATEGORIE = :cat, "
@@ -194,27 +150,10 @@ bool Equipment::modifier(QString *erreur) const
     q.bindValue(QStringLiteral(":id"),     id);
     if (!run(q, erreur)) return false;
 
-    // 3) Historique : un enregistrement par champ modifié (métier 5)
-    if (avant.nom != nom
-        && !logChange(id, QStringLiteral("Nom"), avant.nom, nom, erreur)) return false;
-    if (avant.code != code
-        && !logChange(id, QStringLiteral("Code"), avant.code, code, erreur)) return false;
-    if (avant.statut != statut
-        && !logChange(id, QStringLiteral("Statut"), avant.statut, statut, erreur)) return false;
-    if (avant.categorie != categorie
-        && !logChange(id, QStringLiteral("Catégorie"), avant.categorie, categorie, erreur)) return false;
-    if (avant.localisation != localisation
-        && !logChange(id, QStringLiteral("Localisation"), avant.localisation, localisation, erreur)) return false;
-    if (avant.description != description
-        && !logChange(id, QStringLiteral("Description"), avant.description, description, erreur)) return false;
-    if (avant.idFournisseur != idFournisseur
-        && !logChange(id, QStringLiteral("Fournisseur"), avant.fournisseurNom, fournisseurNom, erreur)) return false;
-    if (avant.derniereMaintenance != derniereMaintenance
-        && !logChange(id, QStringLiteral("Dernière maintenance"),
-                      avant.derniereMaintenance.toString(Qt::ISODate),
-                      derniereMaintenance.toString(Qt::ISODate), erreur)) return false;
-
-    if (!tx.commit()) return fail(erreur, QSqlDatabase::database().lastError());
+    if (q.numRowsAffected() == 0) {
+        if (erreur) *erreur = QStringLiteral("Équipement introuvable.");
+        return false;
+    }
     return true;
 }
 
@@ -232,29 +171,4 @@ bool Equipment::supprimer(int id, QString *erreur)
         return false;
     }
     return true;
-}
-
-// ============================================================
-//  Historique d'un équipement
-// ============================================================
-QList<EquipmentHistory> EquipmentHistory::pourEquipement(int idEquipment, QString *erreur)
-{
-    QList<EquipmentHistory> out;
-    QSqlQuery q;
-    q.prepare(QStringLiteral(
-        "SELECT DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR "
-        "FROM EQUIPEMENT_HISTORIQUE "
-        "WHERE ID_EQUIPEMENT = :id ORDER BY DATE_CHANGEMENT DESC, ID_HIST DESC"));
-    q.bindValue(QStringLiteral(":id"), idEquipment);
-    if (!run(q, erreur)) return out;
-    while (q.next()) {
-        EquipmentHistory h;
-        h.idEquipment = idEquipment;
-        h.date   = q.value(0).toDateTime();
-        h.champ  = q.value(1).toString();
-        h.ancien = q.value(2).toString();
-        h.nouveau= q.value(3).toString();
-        out << h;
-    }
-    return out;
 }

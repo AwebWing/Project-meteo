@@ -3,7 +3,7 @@
 --  Oracle 11g XE - à exécuter avec l'utilisateur METEO
 --  (SQL Developer : ouvrir ce fichier, puis "Exécuter le script" = F5)
 --
---  Tables      : FOURNISSEUR, FOURNISSEUR_HISTORIQUE
+--  Tables      : FOURNISSEUR
 --  Prérequis   : aucun
 --  Re-exécutable : OUI - supprime puis recrée ses objets.
 --  Encodage    : fichier en UTF-8.
@@ -17,11 +17,11 @@ SET DEFINE OFF
 -- ---------- Nettoyage (aucune erreur si les objets n'existent pas) ----------
 BEGIN
     FOR t IN (SELECT table_name FROM user_tables
-              WHERE table_name IN ('FOURNISSEUR_HISTORIQUE', 'FOURNISSEUR')) LOOP
+              WHERE table_name IN ('FOURNISSEUR')) LOOP
         EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS PURGE';
     END LOOP;
     FOR s IN (SELECT sequence_name FROM user_sequences
-              WHERE sequence_name IN ('SEQ_FOURNISSEUR', 'SEQ_FOURNISSEUR_HISTORIQUE')) LOOP
+              WHERE sequence_name IN ('SEQ_FOURNISSEUR')) LOOP
         EXECUTE IMMEDIATE 'DROP SEQUENCE ' || s.sequence_name;
     END LOOP;
 END;
@@ -29,7 +29,6 @@ END;
 
 -- ---------- Séquences (auto-incrément sous Oracle 11g) ----------
 CREATE SEQUENCE SEQ_FOURNISSEUR            START WITH 1 INCREMENT BY 1 NOCACHE;
-CREATE SEQUENCE SEQ_FOURNISSEUR_HISTORIQUE START WITH 1 INCREMENT BY 1 NOCACHE;
 
 -- ---------- Table FOURNISSEUR ----------
 CREATE TABLE FOURNISSEUR (
@@ -56,22 +55,6 @@ CREATE TABLE FOURNISSEUR (
     CONSTRAINT CK_FOURN_STATUT    CHECK (STATUT IN ('Actif', 'Suspendu', 'Archivé'))
 );
 
--- ---------- Table FOURNISSEUR_HISTORIQUE (traçabilité) ----------
-CREATE TABLE FOURNISSEUR_HISTORIQUE (
-    ID_HIST          NUMBER(10)    NOT NULL,
-    ID_FOURNISSEUR   NUMBER(10)    NOT NULL,
-    DATE_CHANGEMENT  DATE          DEFAULT SYSDATE NOT NULL,
-    CHAMP            VARCHAR2(50)  NOT NULL,
-    ANCIENNE_VALEUR  VARCHAR2(200),
-    NOUVELLE_VALEUR  VARCHAR2(200),
-    CONSTRAINT PK_FOURNISSEUR_HISTORIQUE PRIMARY KEY (ID_HIST),
-    CONSTRAINT FK_HIST_FOURN FOREIGN KEY (ID_FOURNISSEUR)
-        REFERENCES FOURNISSEUR (ID_FOURNISSEUR) ON DELETE CASCADE
-);
-
--- Sert aussi d'index à la clé étrangère (ID_FOURNISSEUR en tête).
-CREATE INDEX IDX_HIST_FOURN ON FOURNISSEUR_HISTORIQUE (ID_FOURNISSEUR, DATE_CHANGEMENT);
-
 -- ---------- Triggers : clé primaire automatique si non fournie ----------
 CREATE OR REPLACE TRIGGER TRG_FOURNISSEUR_ID
 BEFORE INSERT ON FOURNISSEUR
@@ -79,15 +62,6 @@ FOR EACH ROW
 WHEN (NEW.ID_FOURNISSEUR IS NULL)
 BEGIN
     :NEW.ID_FOURNISSEUR := SEQ_FOURNISSEUR.NEXTVAL;
-END;
-/
-
-CREATE OR REPLACE TRIGGER TRG_FOURN_HIST_ID
-BEFORE INSERT ON FOURNISSEUR_HISTORIQUE
-FOR EACH ROW
-WHEN (NEW.ID_HIST IS NULL)
-BEGIN
-    :NEW.ID_HIST := SEQ_FOURNISSEUR_HISTORIQUE.NEXTVAL;
 END;
 /
 
@@ -111,9 +85,5 @@ VALUES ('AutoPro Tunisie', 'Maintenance', 'Hatem Gharbi', 'hatem@autopro.tn', '7
 
 INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
 VALUES ('Sécurité Pro', 'Maintenance', 'Leila Ferchichi', 'leila@securitepro.tn', '71000006', 'Avenue de la République', 'Sfax', '6789012/F/M/000', 'Sfax', 5, 5, TRUNC(SYSDATE) - 150, TRUNC(SYSDATE) + 400, 'Actif');
-
--- Historique initial : une ligne "Création" par fournisseur.
-INSERT INTO FOURNISSEUR_HISTORIQUE (ID_FOURNISSEUR, DATE_CHANGEMENT, CHAMP, NOUVELLE_VALEUR)
-SELECT ID_FOURNISSEUR, TRUNC(SYSDATE) - 60 + 9/24, 'Création', NOM FROM FOURNISSEUR;
 
 COMMIT;

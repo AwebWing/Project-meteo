@@ -29,6 +29,5 @@ QStringList controleGeographique(const Zone &z);      // anomalies (avertissemen
 // Validations du CRUD (cahier 5.2.1) -> liste d'erreurs (vide = OK)
 QStringList valider(const Zone &z, const QList<Zone> &existantes);
 
-// Metier 5 (historique) : voir ZoneRepository::history()
 
 } // namespace ZoneService

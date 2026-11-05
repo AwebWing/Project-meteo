@@ -51,8 +51,3 @@ bool EquipmentRepository::remove(int id, QString *erreur)
     emit changed();
     return true;
 }
-
-QList<EquipmentHistory> EquipmentRepository::history(int idEquipment) const
-{
-    return EquipmentHistory::pourEquipement(idEquipment);
-}

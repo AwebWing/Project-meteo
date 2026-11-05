@@ -374,7 +374,7 @@ void ZonesPage::onDetails()
     const QList<Zone> ranking = ZoneService::classementPriorite(m_repo->all());
     int rang = 0;
     for (int i = 0; i < ranking.size(); ++i) if (ranking[i].id == zone->id) rang = i + 1;
-    ZoneDetailsDialog dlg(*zone, m_repo->history(zone->id), rang, ranking.size(), this);
+    ZoneDetailsDialog dlg(*zone, rang, ranking.size(), this);
     dlg.exec();
 }
 

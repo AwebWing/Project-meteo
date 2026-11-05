@@ -3,11 +3,10 @@
 #include <QList>
 #include "zone.h"
 
-// Interface "Détails zone" : fiche complete + indicateurs metiers + historique.
+// Interface "Détails zone" : fiche complete + indicateurs metiers.
 class ZoneDetailsDialog : public QDialog
 {
     Q_OBJECT
 public:
-    ZoneDetailsDialog(const Zone &zone, const QList<ZoneHistory> &history,
-                      int rangPriorite, int nbZones, QWidget *parent = nullptr);
+    ZoneDetailsDialog(const Zone &zone, int rangPriorite, int nbZones, QWidget *parent = nullptr);
 };

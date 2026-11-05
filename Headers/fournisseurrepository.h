@@ -25,9 +25,8 @@ public:
     QList<Fournisseur>         all() const { return m_fournisseurs; }
     std::optional<Fournisseur> find(int id) const;
     int                        add(Fournisseur f);            // retourne le nouvel id, ou -1
-    bool                       update(const Fournisseur &f);  // historise les changements
+    bool                       update(const Fournisseur &f);
     bool                       remove(int id, QString *erreur = nullptr);
-    QList<FournisseurHistory>  history(int idFournisseur) const;
     bool                       reload();                      // relit la table FOURNISSEUR
 
     // Métier : meilleur fournisseur actif avec contrat valide pour un type

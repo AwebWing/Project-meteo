@@ -21,9 +21,8 @@ public:
     QList<Zone>           all() const { return m_zones; }
     std::optional<Zone>   find(int id) const;
     int                   add(Zone z);                              // nouvel id, ou -1 si echec
-    bool                  update(const Zone &z);                    // historise les changements
+    bool                  update(const Zone &z);                    
     bool                  remove(int id, QString *erreur = nullptr);
-    QList<ZoneHistory>    history(int idZone) const;
     bool                  reload();                                 // relit la table ZONE
 
     QString lastError() const { return m_lastError; }               // dernier message d'erreur

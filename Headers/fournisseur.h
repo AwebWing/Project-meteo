@@ -85,27 +85,12 @@ struct Fournisseur {
     // Chaque méthode retourne true si la requête a réussi.
     // En cas d'échec, *erreur reçoit un message lisible.
 
-    // Create : insère le fournisseur, renseigne this->id et historise la création.
+    // Create : insère le fournisseur, renseigne this->id.
     bool ajouter(QString *erreur = nullptr);
-    // Update : met à jour la ligne et historise les champs modifiés.
+    // Update : met à jour la ligne.
     bool modifier(QString *erreur = nullptr) const;
-    // Delete : supprime le fournisseur (son historique est supprimé en cascade).
+    // Delete : supprime le fournisseur.
     static bool supprimer(int id, QString *erreur = nullptr);
     // Read : tous les fournisseurs, triés par id.
     static QList<Fournisseur> afficher(QString *erreur = nullptr);
-};
-
-// ---------------------------------------------------------------
-//  Historique des modifications — table FOURNISSEUR_HISTORIQUE
-// ---------------------------------------------------------------
-struct FournisseurHistory {
-    int       idFournisseur = 0;
-    QDateTime date;
-    QString   champ;
-    QString   ancien;
-    QString   nouveau;
-
-    // Historique d'un fournisseur, du plus récent au plus ancien.
-    static QList<FournisseurHistory> pourFournisseur(int idFournisseur,
-                                                     QString *erreur = nullptr);
 };

@@ -19,11 +19,11 @@ Projet Qt 6 (Widgets + Charts + SQL), compilé avec qmake : `SmartWeather.pro`.
 
 | Script | Tables | Dépend de |
 |---|---|---|
-| `zones_oracle.sql` | ZONE, ZONE_HISTORIQUE | — |
-| `fournisseur_oracle.sql` | FOURNISSEUR, FOURNISSEUR_HISTORIQUE | — |
-| `equipement_oracle.sql` | EQUIPEMENT, EQUIPEMENT_HISTORIQUE | FOURNISSEUR |
-| `personnel_oracle.sql` | AGENT, AGENT_HISTORIQUE | ZONE |
-| `intervention_oracle.sql` | INTERVENTION, INTERVENTION_HISTORIQUE, INTERVENTION_EQUIPEMENT | ZONE, EQUIPEMENT, AGENT |
+| `zones_oracle.sql` | ZONE | — |
+| `fournisseur_oracle.sql` | FOURNISSEUR | — |
+| `equipement_oracle.sql` | EQUIPEMENT | FOURNISSEUR |
+| `personnel_oracle.sql` | AGENT | ZONE |
+| `intervention_oracle.sql` | INTERVENTION, INTERVENTION_EQUIPEMENT | ZONE, EQUIPEMENT, AGENT |
 
 - Chaque script est **re-exécutable** (il supprime puis recrée ses objets) : ne pas le relancer sur une base dont les
   données comptent. Pour tout réinitialiser de façon cohérente, utiliser `install_all.sql`.
@@ -45,7 +45,7 @@ La couverture réseau (nombre de stations par zone) vaudra 0 % tant que la table
 ## Structure
 | Dossier | Contenu |
 |---|---|
-| `Sources/`, `Headers/` | code C++ (un `.cpp` par classe ; `theme.h`, `uihelpers.h`, `dbhelpers.h` sont des en-têtes seuls) |
+| `Sources/`, `Headers/` | code C++ (un `.cpp` par classe ; `theme.h`, `uihelpers.h`, `inputfilters.h` sont des en-têtes seuls) |
 | `Forms/` | fichiers Qt Designer (`mainwindow.ui`, `interventiondialog.ui`) |
 | `resources/` | logo (`resources.qrc`) |
 | `SQL/` | scripts Oracle |
@@ -53,10 +53,10 @@ La couverture réseau (nombre de stations par zone) vaudra 0 % tant que la table
 
 ### Architecture modèle-vue
 Les requêtes SQL (toutes **préparées** : `prepare` + `bindValue`) sont uniquement dans les entités :
-`Sources/zone.cpp`, `equipment.cpp`, `fournisseur.cpp` (`ajouter`, `modifier`, `supprimer`, `afficher`, `historique`).
+`Sources/zone.cpp`, `equipment.cpp`, `fournisseur.cpp` (`ajouter`, `modifier`, `supprimer`, `afficher`).
 Chaque `*Repository` n'a aucune requête : il appelle l'entité, garde la liste en mémoire et émet `changed()` pour
 rafraîchir les pages. Les services (`zoneservice`, `equipmentservice`, `interventionservice`) contiennent les règles
-métier sans accès à la base ni à l'interface. `Headers/dbhelpers.h` fournit la transaction RAII partagée.
+métier sans accès à la base ni à l'interface.
 
 | Fichier | Rôle |
 |---|---|

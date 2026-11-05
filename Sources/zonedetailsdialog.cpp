@@ -1,19 +1,17 @@
 #include "zonedetailsdialog.h"
-#include <QHeaderView>
 #include <QLabel>
 #include <QPushButton>
-#include <QTableWidget>
 #include <QVBoxLayout>
 #include "theme.h"
 #include "uihelpers.h"
 #include "zoneservice.h"
 
-ZoneDetailsDialog::ZoneDetailsDialog(const Zone &z, const QList<ZoneHistory> &history,
+ZoneDetailsDialog::ZoneDetailsDialog(const Zone &z,
                                      int rang, int nbZones, QWidget *parent)
     : QDialog(parent)
 {
     setWindowTitle(QStringLiteral("Détails de la zone — %1").arg(z.nom));
-    resize(640, 640);
+    resize(560, 480);
 
     const QString niv = ZoneService::niveau(z.vulnerabilite);
     const QString nivHtml = QStringLiteral("<b style='color:%1'>%2</b>").arg(Theme::levelColor(niv).name(), niv);
@@ -49,25 +47,6 @@ ZoneDetailsDialog::ZoneDetailsDialog(const Zone &z, const QList<ZoneHistory> &hi
     info->setTextFormat(Qt::RichText);
     info->setWordWrap(true);
 
-    auto *histTitle = new QLabel(QStringLiteral("Historique d'évolution"));
-    histTitle->setObjectName("cardTitle");
-
-    auto *table = new QTableWidget(history.size(), 4);
-    table->setHorizontalHeaderLabels({QStringLiteral("Date"), QStringLiteral("Champ"),
-                                      QStringLiteral("Ancienne valeur"), QStringLiteral("Nouvelle valeur")});
-    table->verticalHeader()->hide();
-    table->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    table->setSelectionBehavior(QAbstractItemView::SelectRows);
-    table->setAlternatingRowColors(true);
-    table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    for (int i = 0; i < history.size(); ++i) {
-        const ZoneHistory &h = history[i];
-        table->setItem(i, 0, new QTableWidgetItem(h.date.toString("dd/MM/yyyy HH:mm")));
-        table->setItem(i, 1, new QTableWidgetItem(h.champ));
-        table->setItem(i, 2, new QTableWidgetItem(h.ancien.isEmpty() ? "—" : h.ancien));
-        table->setItem(i, 3, new QTableWidgetItem(h.nouveau));
-    }
-
     auto *close = new QPushButton(QStringLiteral("Fermer"));
     connect(close, &QPushButton::clicked, this, &QDialog::accept);
 
@@ -77,7 +56,6 @@ ZoneDetailsDialog::ZoneDetailsDialog(const Zone &z, const QList<ZoneHistory> &hi
     root->addWidget(title);
     root->addWidget(sub);
     root->addWidget(info);
-    root->addWidget(histTitle);
-    root->addWidget(table, 1);
+    root->addStretch(1);
     root->addWidget(close, 0, Qt::AlignRight);
 }

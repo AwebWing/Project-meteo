@@ -52,11 +52,6 @@ bool FournisseurRepository::remove(int id, QString *erreur)
     return true;
 }
 
-QList<FournisseurHistory> FournisseurRepository::history(int idFournisseur) const
-{
-    return FournisseurHistory::pourFournisseur(idFournisseur);
-}
-
 QString FournisseurRepository::suggest(const QString &type) const
 {
     if (type.isEmpty())

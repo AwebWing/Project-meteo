@@ -56,29 +56,14 @@ struct Equipment {
     // Chaque méthode retourne true si la requête a réussi.
     // En cas d'échec, *erreur reçoit un message lisible.
 
-    // Create : insère l'équipement, renseigne this->id et historise la création.
+    // Create : insère l'équipement, renseigne this->id.
     bool ajouter(QString *erreur = nullptr);
-    // Update : met à jour la ligne et historise les champs modifiés (métier 5).
+    // Update : met à jour la ligne.
     bool modifier(QString *erreur = nullptr) const;
-    // Delete : supprime l'équipement (son historique est supprimé en cascade).
+    // Delete : supprime l'équipement.
     static bool supprimer(int id, QString *erreur = nullptr);
     // Read : tous les équipements, triés par id.
     static QList<Equipment> afficher(QString *erreur = nullptr);
     // Fournisseurs sélectionnables dans le formulaire : (id, nom), triés par nom.
     static QList<QPair<int, QString>> fournisseurs(QString *erreur = nullptr);
-};
-
-// ---------------------------------------------------------------
-//  Historique des modifications (Métier 5) — table EQUIPEMENT_HISTORIQUE
-// ---------------------------------------------------------------
-struct EquipmentHistory {
-    int       idEquipment = 0;
-    QDateTime date;
-    QString   champ;
-    QString   ancien;
-    QString   nouveau;
-
-    // Historique d'un équipement, du plus récent au plus ancien.
-    static QList<EquipmentHistory> pourEquipement(int idEquipment,
-                                                   QString *erreur = nullptr);
 };

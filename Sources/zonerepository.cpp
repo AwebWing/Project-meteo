@@ -57,8 +57,3 @@ bool ZoneRepository::remove(int id, QString *erreur)
     emit changed();
     return true;
 }
-
-QList<ZoneHistory> ZoneRepository::history(int idZone) const
-{
-    return ZoneHistory::pourZone(idZone);
-}

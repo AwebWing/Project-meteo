@@ -31,24 +31,12 @@ struct Zone {
     // Chaque methode retourne true si la requete a reussi ; sinon, si "erreur"
     // n'est pas nul, il recoit un message lisible pour l'utilisateur.
 
-    // Create : insere la zone, renseigne this->id et historise la creation.
+    // Create : insere la zone, renseigne this->id.
     bool ajouter(QString *erreur = nullptr);
-    // Update : met a jour la ligne ID_ZONE = id et historise les champs modifies (metier 5).
+    // Update : met a jour la ligne ID_ZONE = id.
     bool modifier(QString *erreur = nullptr) const;
-    // Delete : supprime la zone (son historique est supprime en cascade).
+    // Delete : supprime la zone.
     static bool supprimer(int id, QString *erreur = nullptr);
     // Read : toutes les zones, triees par id.
     static QList<Zone> afficher(QString *erreur = nullptr);
-};
-
-// Metier 5 : historique d'evolution (table ZONE_HISTORIQUE)
-struct ZoneHistory {
-    int       idZone = 0;
-    QDateTime date;
-    QString   champ;
-    QString   ancien;
-    QString   nouveau;
-
-    // Historique d'une zone, du plus recent au plus ancien.
-    static QList<ZoneHistory> pourZone(int idZone, QString *erreur = nullptr);
 };

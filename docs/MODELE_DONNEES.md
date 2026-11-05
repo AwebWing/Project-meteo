@@ -7,17 +7,12 @@ Base : **Oracle 11g XE**, utilisateur `meteo`. Scripts de création : dossier [`
 
 ```mermaid
 erDiagram
-    ZONE ||--o{ ZONE_HISTORIQUE : "historique (1,1) - (0,N)"
     ZONE ||--o{ INTERVENTION : "accueille (1,1) - (0,N)"
     ZONE |o--o{ AGENT : "affecté à (0,1) - (0,N)"
     AGENT |o--o{ INTERVENTION : "responsable (0,1) - (0,N)"
-    INTERVENTION ||--o{ INTERVENTION_HISTORIQUE : "historique"
     INTERVENTION ||--o{ INTERVENTION_EQUIPEMENT : "mobilise"
     EQUIPEMENT ||--o{ INTERVENTION_EQUIPEMENT : "est engagé dans"
     FOURNISSEUR ||--o{ EQUIPEMENT : "fournit (1,1) - (1,N)"
-    EQUIPEMENT ||--o{ EQUIPEMENT_HISTORIQUE : "historique"
-    AGENT ||--o{ AGENT_HISTORIQUE : "historique"
-    FOURNISSEUR ||--o{ FOURNISSEUR_HISTORIQUE : "historique"
 
     ZONE {
         int    id_zone PK
@@ -71,8 +66,8 @@ erDiagram
     }
 ```
 
-Les tables `*_HISTORIQUE` ont toutes la même forme (`id_hist`, clé étrangère, `date_changement`, `champ`,
-`ancienne_valeur`, `nouvelle_valeur`). La table `STATION` n'existe pas encore : elle référencera `ZONE(id_zone)`
+La base contient **6 tables** : les 5 entités du modèle physique (ZONE, EQUIPEMENT, FOURNISSEUR, AGENT, INTERVENTION)
+et la table d'association `INTERVENTION_EQUIPEMENT` (association *Utilise* 1..N / 0..N). La table `STATION` n'existe pas encore : elle référencera `ZONE(id_zone)`
 (la couverture réseau vaut 0 % en attendant).
 
 ## 2. Modèle relationnel (MLD)
@@ -87,7 +82,6 @@ INTERVENTION            (#id_intervention, type, priorite, statut, date_debut, d
 INTERVENTION_EQUIPEMENT (#id_intervention*, #id_equipement*)
 FOURNISSEUR             (#id_fournisseur, nom, type, contact, email, telephone, adresse, gouvernorat,
                          matricule_fiscal, ville, note, delai, date_debut, date_fin, statut)
-<ENTITE>_HISTORIQUE     (#id_hist, id_<entite>*, date_changement, champ, ancienne_valeur, nouvelle_valeur)
 ```
 
 `#` clé primaire · `*` clé étrangère.
@@ -95,16 +89,14 @@ FOURNISSEUR             (#id_fournisseur, nom, type, contact, email, telephone, 
 ### Comportement des clés étrangères
 | Clé étrangère | Suppression du parent |
 |---|---|
-| `*_HISTORIQUE` → entité | **cascade** : l'historique disparaît avec l'entité |
 | `EQUIPEMENT.id_fournisseur` → FOURNISSEUR | **refusée** (ORA-02292 : un fournisseur qui fournit encore des équipements ne se supprime pas) |
 | `INTERVENTION.id_zone` → ZONE | **refusée** (ORA-02292, l'application propose de désactiver la zone) |
 | `INTERVENTION_EQUIPEMENT.id_equipement` → EQUIPEMENT | **refusée** (on garde la traçabilité des interventions passées) |
 | `INTERVENTION_EQUIPEMENT.id_intervention` → INTERVENTION | **cascade** : l'équipement est libéré |
 | `AGENT.id_zone` → ZONE · `INTERVENTION.id_agent` → AGENT | **mise à NULL** (agent « sans zone » / intervention « sans responsable ») |
 
-Toutes les clés étrangères sont indexées (Oracle ne le fait pas automatiquement), soit par un index dédié
-(`IDX_AGENT_ZONE`, `IDX_INTERV_ZONE`, `IDX_INTERV_AGENT`, `IDX_IE_EQUIPEMENT`), soit par l'index
-`IDX_HIST_*` (clé étrangère + `date_changement`) des tables d'historique.
+Toutes les clés étrangères sont indexées (Oracle ne le fait pas automatiquement) par un index dédié
+(`IDX_AGENT_ZONE`, `IDX_INTERV_ZONE`, `IDX_INTERV_AGENT`, `IDX_IE_EQUIPEMENT`).
 
 ## 3. Modèle physique (MPD) — contraintes principales
 
@@ -127,7 +119,7 @@ d'écrire l'historique ; le trigger sert aux insertions manuelles dans SQL Devel
 
 | Couche | Fichiers | Rôle |
 |---|---|---|
-| Modèle | `Headers/zone.h`, `equipment.h`, `fournisseur.h` + `Sources/zone.cpp`, `equipment.cpp`, `fournisseur.cpp` | Entité : `ajouter()`, `modifier()`, `supprimer(id)`, `afficher()` — requêtes préparées (`prepare` + `bindValue`), historique champ par champ, transaction (`dbhelpers.h`) |
+| Modèle | `Headers/zone.h`, `equipment.h`, `fournisseur.h` + `Sources/zone.cpp`, `equipment.cpp`, `fournisseur.cpp` | Entité : `ajouter()`, `modifier()`, `supprimer(id)`, `afficher()` — requêtes préparées (`prepare` + `bindValue`) |
 | Modèle | `Headers/connection.h`, `Sources/connection.cpp` | Connexion Oracle unique (Singleton) |
 | Métier | `zoneservice.cpp`, `equipmentservice.cpp`, `interventionservice.cpp` | Règles métier + validations (sans accès BD) |
 | Intermédiaire | `zonerepository.cpp`, `equipmentrepository.cpp`, `fournisseurrepository.cpp` | Appelle l'entité, garde la liste en mémoire, émet `changed()` |

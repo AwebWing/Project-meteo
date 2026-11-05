@@ -1,5 +1,4 @@
 #include "fournisseur.h"
-#include "dbhelpers.h"
 
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -52,27 +51,6 @@ bool run(QSqlQuery &q, QString *erreur)
     return fail(erreur, q.lastError());
 }
 
-using DbHelpers::Transaction;
-
-// ------------------------------------------------------------
-//  Historique interne
-// ------------------------------------------------------------
-bool logChange(int idFournisseur, const QString &champ,
-               const QString &ancien, const QString &nouveau,
-               QString *erreur)
-{
-    QSqlQuery q;
-    q.prepare(QStringLiteral(
-        "INSERT INTO FOURNISSEUR_HISTORIQUE "
-        "(ID_FOURNISSEUR, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR) "
-        "VALUES (:id, :champ, :ancien, :nouveau)"));
-    q.bindValue(QStringLiteral(":id"),      idFournisseur);
-    q.bindValue(QStringLiteral(":champ"),   champ);
-    q.bindValue(QStringLiteral(":ancien"),  ancien);
-    q.bindValue(QStringLiteral(":nouveau"), nouveau);
-    return run(q, erreur);
-}
-
 Fournisseur lireFournisseur(const QSqlQuery &q)
 {
     Fournisseur f;
@@ -93,8 +71,6 @@ Fournisseur lireFournisseur(const QSqlQuery &q)
     return f;
 }
 
-QString dateTxt(const QDate &d) { return d.isValid() ? d.toString(QStringLiteral("dd/MM/yyyy")) : QString(); }
-
 } // namespace
 
 // ============================================================
@@ -102,8 +78,6 @@ QString dateTxt(const QDate &d) { return d.isValid() ? d.toString(QStringLiteral
 // ============================================================
 bool Fournisseur::ajouter(QString *erreur)
 {
-    Transaction tx;
-
     // 1) Nouvelle clé primaire (séquence Oracle)
     QSqlQuery seq;
     seq.prepare(QStringLiteral("SELECT SEQ_FOURNISSEUR.NEXTVAL FROM DUAL"));
@@ -135,10 +109,6 @@ bool Fournisseur::ajouter(QString *erreur)
     q.bindValue(QStringLiteral(":statut"),  statut);
     if (!run(q, erreur)) return false;
 
-    // 3) Historique de création
-    if (!logChange(nouvelId, QStringLiteral("Création"), QString(), nom, erreur)) return false;
-
-    if (!tx.commit()) return fail(erreur, QSqlDatabase::database().lastError());
     id = nouvelId;
     return true;
 }
@@ -162,22 +132,7 @@ QList<Fournisseur> Fournisseur::afficher(QString *erreur)
 // ============================================================
 bool Fournisseur::modifier(QString *erreur) const
 {
-    Transaction tx;
-
-    // 1) Valeurs actuelles (pour détecter les champs modifiés → historique)
-    QSqlQuery old;
-    old.prepare(QStringLiteral("SELECT %1 FROM FOURNISSEUR WHERE ID_FOURNISSEUR = :id")
-                    .arg(QLatin1String(SELECT_COLONNES)));
-    old.bindValue(QStringLiteral(":id"), id);
-    if (!run(old, erreur)) return false;
-    if (!old.next()) {
-        if (erreur) *erreur = QStringLiteral("Fournisseur introuvable.");
-        return false;
-    }
-    const Fournisseur avant = lireFournisseur(old);
-    old.finish();
-
-    // 2) Mise à jour
+    // Mise à jour (requête préparée)
     QSqlQuery q;
     q.prepare(QStringLiteral(
         "UPDATE FOURNISSEUR SET NOM = :nom, TYPE = :type, CONTACT = :contact, "
@@ -199,25 +154,10 @@ bool Fournisseur::modifier(QString *erreur) const
     q.bindValue(QStringLiteral(":id"),      id);
     if (!run(q, erreur)) return false;
 
-    // 3) Historique : un enregistrement par champ modifié
-    auto diff = [&](const char *champ, const QString &a, const QString &b) {
-        return a == b || logChange(id, QString::fromUtf8(champ), a, b, erreur);
-    };
-    if (!diff("Nom",         avant.nom,         nom)         ||
-        !diff("Type",        avant.type,        type)        ||
-        !diff("Contact",     avant.contact,     contact)     ||
-        !diff("E-mail",      avant.email,       email)       ||
-        !diff("Téléphone",   avant.telephone,   telephone)   ||
-        !diff("Adresse",     avant.adresse,     adresse)     ||
-        !diff("Gouvernorat", avant.gouvernorat, gouvernorat) ||
-        !diff("Évaluation",  QString::number(avant.note),  QString::number(note))   ||
-        !diff("Délai (jours)", QString::number(avant.delai), QString::number(delai)) ||
-        !diff("Début contrat", dateTxt(avant.debut), dateTxt(debut)) ||
-        !diff("Fin contrat",   dateTxt(avant.fin),   dateTxt(fin))   ||
-        !diff("Statut",      avant.statut,      statut))
+    if (q.numRowsAffected() == 0) {
+        if (erreur) *erreur = QStringLiteral("Fournisseur introuvable.");
         return false;
-
-    if (!tx.commit()) return fail(erreur, QSqlDatabase::database().lastError());
+    }
     return true;
 }
 
@@ -235,29 +175,4 @@ bool Fournisseur::supprimer(int id, QString *erreur)
         return false;
     }
     return true;
-}
-
-// ============================================================
-//  Historique d'un fournisseur
-// ============================================================
-QList<FournisseurHistory> FournisseurHistory::pourFournisseur(int idFournisseur, QString *erreur)
-{
-    QList<FournisseurHistory> out;
-    QSqlQuery q;
-    q.prepare(QStringLiteral(
-        "SELECT DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR "
-        "FROM FOURNISSEUR_HISTORIQUE "
-        "WHERE ID_FOURNISSEUR = :id ORDER BY DATE_CHANGEMENT DESC, ID_HIST DESC"));
-    q.bindValue(QStringLiteral(":id"), idFournisseur);
-    if (!run(q, erreur)) return out;
-    while (q.next()) {
-        FournisseurHistory h;
-        h.idFournisseur = idFournisseur;
-        h.date    = q.value(0).toDateTime();
-        h.champ   = q.value(1).toString();
-        h.ancien  = q.value(2).toString();
-        h.nouveau = q.value(3).toString();
-        out << h;
-    }
-    return out;
 }

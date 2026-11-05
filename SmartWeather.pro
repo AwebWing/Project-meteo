@@ -43,7 +43,6 @@ HEADERS += \
     Headers/barchartwidget.h \
     Headers/connection.h \
     Headers/coveragepage.h \
-    Headers/dbhelpers.h \
     Headers/emploipage.h \
     Headers/equipment.h \
     Headers/equipmentdialog.h \

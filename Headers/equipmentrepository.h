@@ -23,9 +23,8 @@ public:
     QList<Equipment>         all()    const { return m_equipments; }
     std::optional<Equipment> find(int id)   const;
     int                      add(Equipment eq);           // retourne le nouvel id, ou -1
-    bool                     update(const Equipment &eq); // historise les changements
+    bool                     update(const Equipment &eq); 
     bool                     remove(int id, QString *erreur = nullptr);
-    QList<EquipmentHistory>  history(int idEquipment) const;
     bool                     reload();                    // relit la table EQUIPEMENT
 
     QString lastError() const { return m_lastError; }

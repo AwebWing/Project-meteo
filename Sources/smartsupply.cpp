@@ -64,17 +64,6 @@ QString etatContrat(const Fournisseur &f, bool *alerte)
 
 QString esc(const QString &s) { return s.toHtmlEscaped(); }
 
-QString ligneHistorique(const FournisseurHistory &h)
-{
-    const QString d = fmtDate(h.date.date());
-    if (h.champ == QStringLiteral("Création"))
-        return QStringLiteral("<b>%1</b> — Création du fournisseur").arg(d);
-    return QStringLiteral("<b>%1</b> — %2 : %3 → %4")
-        .arg(d, esc(h.champ),
-             h.ancien.isEmpty()  ? QStringLiteral("—") : esc(h.ancien),
-             h.nouveau.isEmpty() ? QStringLiteral("—") : esc(h.nouveau));
-}
-
 // ------------------------------------------------------------
 //  Delegate : affiche le statut comme un badge coloré arrondi
 //  (nom unique : EquipmentPage a déjà son propre StatutDelegate)
@@ -409,7 +398,7 @@ SmartSupply::SmartSupply(FournisseurRepository *repo, QWidget *parent)
 
     body->addWidget(centerCard, 1);
 
-    // RIGHT : détail + historique
+    // RIGHT : détail
     QVBoxLayout *detailLayout = nullptr;
     auto *detailCard = makeCard(detailLayout);
     detailCard->setFixedWidth(280);
@@ -429,18 +418,7 @@ SmartSupply::SmartSupply(FournisseurRepository *repo, QWidget *parent)
     m_detailBody->setAlignment(Qt::AlignTop);
     m_detailBody->setTextFormat(Qt::RichText);
     detailLayout->addWidget(m_detailBody);
-
-    detailLayout->addWidget(makeSeparator());
-    auto *histHdr = new QLabel(QStringLiteral("Historique"));
-    histHdr->setObjectName(QStringLiteral("cardTitle"));
-    detailLayout->addWidget(histHdr);
-
-    m_histBody = new QLabel;
-    m_histBody->setWordWrap(true);
-    m_histBody->setObjectName(QStringLiteral("muted"));
-    m_histBody->setAlignment(Qt::AlignTop);
-    m_histBody->setTextFormat(Qt::RichText);
-    detailLayout->addWidget(m_histBody, 1);
+    detailLayout->addStretch(1);
 
     body->addWidget(detailCard);
     root->addLayout(body, 1);
@@ -582,7 +560,6 @@ void SmartSupply::updateDetail()
     if (!hasSelection) {
         m_detailTitle->setText(QStringLiteral("—"));
         m_detailBody->clear();
-        m_histBody->clear();
         return;
     }
 
@@ -619,13 +596,6 @@ void SmartSupply::updateDetail()
     body += ligne(QStringLiteral("Contrat"), contrat);
     m_detailBody->setText(body);
 
-    // Historique (6 derniers événements)
-    const QList<FournisseurHistory> hist = m_repo->history(id);
-    QStringList lignes;
-    for (int i = 0; i < hist.size() && i < 6; ++i)
-        lignes << ligneHistorique(hist[i]);
-    m_histBody->setText(lignes.isEmpty() ? QStringLiteral("Aucun événement.")
-                                         : lignes.join(QStringLiteral("<br>")));
 }
 
 // ---------------------------------------------------------------
