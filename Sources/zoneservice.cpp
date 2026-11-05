@@ -1,4 +1,5 @@
 #include "zoneservice.h"
+#include "inputfilters.h"
 #include <algorithm>
 #include <cmath>
 
@@ -88,6 +89,8 @@ QStringList valider(const Zone &z, const QList<Zone> &existantes)
     QStringList erreurs;
     if (z.nom.trimmed().isEmpty())
         erreurs << QStringLiteral("Le nom de la zone est obligatoire.");
+    else if (!InputFilters::nomValide(z.nom))
+        erreurs << QStringLiteral("Le nom de la zone ") + InputFilters::NOM_MESSAGE;
     if (z.code.trimmed().isEmpty())
         erreurs << QStringLiteral("Le code de la zone est obligatoire.");
     else {

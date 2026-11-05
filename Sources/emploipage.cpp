@@ -1,4 +1,5 @@
 #include "emploipage.h"
+#include "inputfilters.h"
 #include "theme.h"
 #include "uihelpers.h"
 
@@ -389,6 +390,8 @@ void EmploiPage::onAddAgent() {
     auto *fl = new QFormLayout(&dlg);
     auto *nomE = new QLineEdit;
     auto *prenomE = new QLineEdit;
+    InputFilters::appliquerFiltreNom(nomE);
+    InputFilters::appliquerFiltreNom(prenomE);
     auto *roleC = new QComboBox;
     roleC->addItems({"Technicien Météo", "Météorologue", "Superviseur", "Agent de terrain"});
     auto *statutC = new QComboBox;
@@ -437,6 +440,8 @@ void EmploiPage::onEditAgent() {
     auto *fl = new QFormLayout(&dlg);
     auto *nomE = new QLineEdit(a.nom);
     auto *prenomE = new QLineEdit(a.prenom);
+    InputFilters::appliquerFiltreNom(nomE);
+    InputFilters::appliquerFiltreNom(prenomE);
     auto *roleC = new QComboBox;
     roleC->addItems({"Technicien Météo", "Météorologue", "Superviseur", "Agent de terrain"});
     roleC->setCurrentText(a.role);

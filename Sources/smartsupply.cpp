@@ -17,6 +17,7 @@
 #include <QPainter>
 #include <QPushButton>
 #include <QRegularExpression>
+#include "inputfilters.h"
 #include <QShowEvent>
 #include <QSpinBox>
 #include <QStandardItemModel>
@@ -150,6 +151,7 @@ FournisseurDialog::FournisseurDialog(FournisseurRepository *repo, const Fourniss
     form->setFieldGrowthPolicy(QFormLayout::ExpandingFieldsGrow);
 
     m_nom = new QLineEdit(f.nom);
+    InputFilters::appliquerFiltreNom(m_nom);
     m_nom->setPlaceholderText(QStringLiteral("Ex : Meteo Sensors TN"));
     form->addRow(QStringLiteral("Nom *"), m_nom);
 
@@ -238,6 +240,8 @@ void FournisseurDialog::accept()
     QStringList errs;
     if (m_f.nom.isEmpty())
         errs << QStringLiteral("Le nom du fournisseur est obligatoire.");
+    else if (!InputFilters::nomValide(m_f.nom))
+        errs << QStringLiteral("Le nom du fournisseur ") + InputFilters::NOM_MESSAGE;
     if (!m_f.email.isEmpty() && !m_f.email.contains(QLatin1Char('@')))
         errs << QStringLiteral("L'adresse e-mail doit contenir un @.");
     if (!m_f.telephone.isEmpty() &&

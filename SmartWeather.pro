@@ -53,6 +53,7 @@ HEADERS += \
     Headers/fournisseur.h \
     Headers/fournisseurrepository.h \
     Headers/intervention.h \
+    Headers/inputfilters.h \
     Headers/interventiondialog.h \
     Headers/interventionservice.h \
     Headers/interventionwidget.h \

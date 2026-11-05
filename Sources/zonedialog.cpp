@@ -1,4 +1,5 @@
 #include "zonedialog.h"
+#include "inputfilters.h"
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
@@ -21,6 +22,7 @@ ZoneDialog::ZoneDialog(const QList<Zone> &existantes, const Zone *zone, QWidget 
     setMinimumWidth(480);
 
     m_nom = new QLineEdit(m_zone.nom);
+    InputFilters::appliquerFiltreNom(m_nom);
     m_code = new QLineEdit(m_zone.code);
     m_code->setPlaceholderText(QStringLiteral("ex : ZN-07"));
 

@@ -9,8 +9,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
-#include <QRegularExpression>
-#include <QRegularExpressionValidator>
+#include "inputfilters.h"
 #include <QTextEdit>
 #include <QVBoxLayout>
 
@@ -43,9 +42,7 @@ EquipmentDialog::EquipmentDialog(EquipmentRepository *repo,
     m_nom = new QLineEdit(eq.nom);
     m_nom->setPlaceholderText("Ex : Thermomètre connecté");
     // Saisie filtrée : commence par une lettre, les chiffres sont refusés dès la frappe.
-    m_nom->setValidator(new QRegularExpressionValidator(
-        QRegularExpression(QString(EquipmentService::NOM_REGEX).remove('^').remove('$')), m_nom));
-    m_nom->setMaxLength(100);
+    InputFilters::appliquerFiltreNom(m_nom);
     form->addRow(QStringLiteral("Nom *"), m_nom);
 
     m_code = new QLineEdit(eq.code);
