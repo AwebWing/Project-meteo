@@ -41,6 +41,8 @@ CREATE TABLE FOURNISSEUR (
     TELEPHONE       VARCHAR2(30),
     ADRESSE         VARCHAR2(200),
     GOUVERNORAT     VARCHAR2(50),
+    MATRICULE_FISCAL VARCHAR2(30),
+    VILLE           VARCHAR2(50),
     NOTE            NUMBER(1)     DEFAULT 3 NOT NULL,
     DELAI           NUMBER(3)     DEFAULT 7 NOT NULL,
     DATE_DEBUT      DATE          NOT NULL,
@@ -92,17 +94,23 @@ END;
 -- ---------- Données de démonstration ----------
 -- Les dates sont relatives à aujourd'hui pour que les alertes
 -- "contrat à renouveler" (moins de 30 jours) restent visibles.
-INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
-VALUES ('Meteo Sensors TN', 'Capteurs et stations', 'Sami Ben Ali', 'sami@meteosensors.tn', '71000001', 'Rue de la Liberté', 'Tunis', 5, 10, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 200, 'Actif');
+INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
+VALUES ('Meteo Sensors TN', 'Capteurs et stations', 'Sami Ben Ali', 'sami@meteosensors.tn', '71000001', 'Rue de la Liberté', 'Tunis', '1234567/A/M/000', 'Tunis', 5, 10, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 200, 'Actif');
 
-INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
-VALUES ('SolarTunis', 'Énergie', 'Rim Trabelsi', 'rim@solartunis.tn', '71000002', 'Avenue Habib Bourguiba', 'Ariana', 4, 14, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 20, 'Actif');
+INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
+VALUES ('SolarTunis', 'Énergie', 'Rim Trabelsi', 'rim@solartunis.tn', '71000002', 'Avenue Habib Bourguiba', 'Ariana', '2345678/B/M/000', 'Ariana', 4, 14, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 20, 'Actif');
 
-INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
-VALUES ('Réseau Plus', 'Réseau et télécom', 'Karim Mansour', 'karim@reseauplus.tn', '71000003', 'Zone industrielle', 'Ben Arous', 4, 8, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 15, 'Actif');
+INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
+VALUES ('Réseau Plus', 'Réseau et télécom', 'Karim Mansour', 'karim@reseauplus.tn', '71000003', 'Zone industrielle', 'Ben Arous', '3456789/C/M/000', 'Ben Arous', 4, 8, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 15, 'Actif');
 
-INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
-VALUES ('InfoPlus', 'Informatique', 'Nour Jaziri', 'nour@infoplus.tn', '71000004', 'Centre urbain nord', 'Tunis', 3, 16, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 300, 'Suspendu');
+INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
+VALUES ('InfoPlus', 'Informatique', 'Nour Jaziri', 'nour@infoplus.tn', '71000004', 'Centre urbain nord', 'Tunis', '4567890/D/M/000', 'Tunis', 3, 16, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 300, 'Suspendu');
+
+INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
+VALUES ('AutoPro Tunisie', 'Maintenance', 'Hatem Gharbi', 'hatem@autopro.tn', '71000005', 'Route de Sousse', 'Sousse', '5678901/E/M/000', 'Sousse', 4, 6, TRUNC(SYSDATE) - 200, TRUNC(SYSDATE) + 250, 'Actif');
+
+INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
+VALUES ('Sécurité Pro', 'Maintenance', 'Leila Ferchichi', 'leila@securitepro.tn', '71000006', 'Avenue de la République', 'Sfax', '6789012/F/M/000', 'Sfax', 5, 5, TRUNC(SYSDATE) - 150, TRUNC(SYSDATE) + 400, 'Actif');
 
 -- Historique initial : une ligne "Création" par fournisseur.
 INSERT INTO FOURNISSEUR_HISTORIQUE (ID_FOURNISSEUR, DATE_CHANGEMENT, CHAMP, NOUVELLE_VALEUR)

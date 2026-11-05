@@ -2,6 +2,7 @@
 #include <QDate>
 #include <QDateTime>
 #include <QList>
+#include <QPair>
 #include <QString>
 #include <QStringList>
 
@@ -33,7 +34,7 @@ inline QString categoryIcon(const QString &cat)
 // ---------------------------------------------------------------
 //  Entité EQUIPEMENT  (table EQUIPEMENT de la base Oracle)
 //  EQUIPEMENT(id_equipement, nom, code, categorie, statut,
-//             localisation, derniere_maint, description)
+//             localisation, derniere_maint, description, id_fournisseur*)
 //
 //  Architecture modèle-vue : TOUTES les requêtes SQL sont ici
 //  (Sources/equipment.cpp). Aucune requête derrière un bouton.
@@ -48,6 +49,8 @@ struct Equipment {
     QString localisation;
     QDate   derniereMaintenance;
     QString description;
+    int     idFournisseur = 0;   // clé étrangère -> FOURNISSEUR (obligatoire : 1..1)
+    QString fournisseurNom;      // nom du fournisseur (lecture seule, via jointure)
 
     // ---------------- CRUD (Oracle) ----------------
     // Chaque méthode retourne true si la requête a réussi.
@@ -61,6 +64,8 @@ struct Equipment {
     static bool supprimer(int id, QString *erreur = nullptr);
     // Read : tous les équipements, triés par id.
     static QList<Equipment> afficher(QString *erreur = nullptr);
+    // Fournisseurs sélectionnables dans le formulaire : (id, nom), triés par nom.
+    static QList<QPair<int, QString>> fournisseurs(QString *erreur = nullptr);
 };
 
 // ---------------------------------------------------------------

@@ -20,10 +20,10 @@ Projet Qt 6 (Widgets + Charts + SQL), compilé avec qmake : `SmartWeather.pro`.
 | Script | Tables | Dépend de |
 |---|---|---|
 | `zones_oracle.sql` | ZONE, ZONE_HISTORIQUE | — |
-| `equipement_oracle.sql` | EQUIPEMENT, EQUIPEMENT_HISTORIQUE | — |
+| `fournisseur_oracle.sql` | FOURNISSEUR, FOURNISSEUR_HISTORIQUE | — |
+| `equipement_oracle.sql` | EQUIPEMENT, EQUIPEMENT_HISTORIQUE | FOURNISSEUR |
 | `personnel_oracle.sql` | AGENT, AGENT_HISTORIQUE | ZONE |
 | `intervention_oracle.sql` | INTERVENTION, INTERVENTION_HISTORIQUE, INTERVENTION_EQUIPEMENT | ZONE, EQUIPEMENT, AGENT |
-| `fournisseur_oracle.sql` | FOURNISSEUR, FOURNISSEUR_HISTORIQUE | — |
 
 - Chaque script est **re-exécutable** (il supprime puis recrée ses objets) : ne pas le relancer sur une base dont les
   données comptent. Pour tout réinitialiser de façon cohérente, utiliser `install_all.sql`.

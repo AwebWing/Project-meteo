@@ -9,6 +9,8 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QRegularExpression>
+#include <QRegularExpressionValidator>
 #include <QTextEdit>
 #include <QVBoxLayout>
 
@@ -40,10 +42,15 @@ EquipmentDialog::EquipmentDialog(EquipmentRepository *repo,
 
     m_nom = new QLineEdit(eq.nom);
     m_nom->setPlaceholderText("Ex : Thermomètre connecté");
+    // Saisie filtrée : commence par une lettre, les chiffres sont refusés dès la frappe.
+    m_nom->setValidator(new QRegularExpressionValidator(
+        QRegularExpression(QString(EquipmentService::NOM_REGEX).remove('^').remove('$')), m_nom));
+    m_nom->setMaxLength(100);
     form->addRow(QStringLiteral("Nom *"), m_nom);
 
     m_code = new QLineEdit(eq.code);
     m_code->setPlaceholderText("Ex : EQ-022");
+    m_code->setMaxLength(20);
     form->addRow(QStringLiteral("Code"), m_code);
 
     m_categorie = new QComboBox;
@@ -56,7 +63,22 @@ EquipmentDialog::EquipmentDialog(EquipmentRepository *repo,
     m_statut->setCurrentText(eq.statut);
     form->addRow(QStringLiteral("Statut *"), m_statut);
 
+    // Fournisseur obligatoire (modèle physique : un équipement a exactement un fournisseur).
+    m_fournisseur = new QComboBox;
+    QString errF;
+    const auto fournisseurs = Equipment::fournisseurs(&errF);
+    for (const auto &f : fournisseurs) m_fournisseur->addItem(f.second, f.first);
+    if (eq.idFournisseur > 0) {
+        const int idx = m_fournisseur->findData(eq.idFournisseur);
+        if (idx >= 0) m_fournisseur->setCurrentIndex(idx);
+    } else {
+        m_fournisseur->setCurrentIndex(-1);
+        m_fournisseur->setPlaceholderText(QStringLiteral("Choisir un fournisseur…"));
+    }
+    form->addRow(QStringLiteral("Fournisseur *"), m_fournisseur);
+
     m_localisation = new QLineEdit(eq.localisation);
+    m_localisation->setMaxLength(100);
     m_localisation->setPlaceholderText("Ex : ST-04, Tunis, Dépôt-1...");
     form->addRow(QStringLiteral("Localisation *"), m_localisation);
 
@@ -98,6 +120,8 @@ void EquipmentDialog::accept()
     m_eq.categorie     = m_categorie->currentText();
     m_eq.statut        = m_statut->currentText();
     m_eq.localisation  = m_localisation->text().trimmed();
+    m_eq.idFournisseur = m_fournisseur->currentData().toInt();   // 0 si rien de choisi
+    m_eq.fournisseurNom = m_fournisseur->currentText();
     m_eq.derniereMaintenance = m_date->date();
     m_eq.description   = m_description->toPlainText().trimmed();
 

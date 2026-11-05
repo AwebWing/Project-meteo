@@ -4,7 +4,8 @@
 --  (SQL Developer : ouvrir ce fichier, puis "Exécuter le script" = F5)
 --
 --  Tables      : EQUIPEMENT, EQUIPEMENT_HISTORIQUE
---  Prérequis   : aucun
+--  Prérequis   : FOURNISSEUR (fournisseur_oracle.sql) - un équipement a
+--                exactement un fournisseur (modèle physique : Fournit 1..1 / 1..N)
 --  Re-exécutable : OUI - supprime puis recrée ses objets (supprimer
 --                EQUIPEMENT seule retire aussi la clé étrangère de
 --                INTERVENTION_EQUIPEMENT : préférer install_all.sql).
@@ -43,7 +44,10 @@ CREATE TABLE EQUIPEMENT (
     LOCALISATION   VARCHAR2(100) NOT NULL,
     DERNIERE_MAINT DATE,
     DESCRIPTION    VARCHAR2(500),
+    ID_FOURNISSEUR NUMBER(10)    NOT NULL,
     CONSTRAINT PK_EQUIPEMENT        PRIMARY KEY (ID_EQUIPEMENT),
+    -- Pas de cascade : un fournisseur qui fournit encore des équipements ne peut pas être supprimé (ORA-02292).
+    CONSTRAINT FK_EQUIPEMENT_FOURN  FOREIGN KEY (ID_FOURNISSEUR) REFERENCES FOURNISSEUR (ID_FOURNISSEUR),
     CONSTRAINT CK_EQUIPEMENT_CAT    CHECK (CATEGORIE IN ('Capteurs', 'Véhicules', 'Matériel de terrain', 'Équipements de sécurité')),
     CONSTRAINT CK_EQUIPEMENT_STATUT CHECK (STATUT IN ('Disponible', 'En maintenance', 'Hors service'))
 );
@@ -52,6 +56,9 @@ CREATE TABLE EQUIPEMENT (
 -- EquipmentService::valider). Les codes NULL ne sont pas indexés : plusieurs
 -- équipements sans code sont donc permis.
 CREATE UNIQUE INDEX UQ_EQUIPEMENT_CODE ON EQUIPEMENT (UPPER(CODE));
+
+-- Index de la clé étrangère (Oracle ne le crée pas automatiquement).
+CREATE INDEX IDX_EQUIP_FOURN ON EQUIPEMENT (ID_FOURNISSEUR);
 
 -- ---------- Table EQUIPEMENT_HISTORIQUE (métier 5 : traçabilité) ----------
 CREATE TABLE EQUIPEMENT_HISTORIQUE (
@@ -91,28 +98,29 @@ END;
 -- ---------- Données de démonstration ----------
 -- Dates de maintenance RELATIVES à aujourd'hui (l'application signale une
 -- alerte au-delà de 180 jours : EQ-013 et EQ-021 sont volontairement en retard).
--- Colonnes : NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Thermomètre connecté',     'EQ-001', 'Capteurs',                'Disponible',     'ST-04',   TRUNC(SYSDATE) - 2);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Station météo',            'EQ-002', 'Capteurs',                'Disponible',     'ST-07',   TRUNC(SYSDATE) - 4);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Capteur UV',               'EQ-003', 'Capteurs',                'Disponible',     'ST-01',   TRUNC(SYSDATE) - 20);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Baromètre digital',        'EQ-004', 'Capteurs',                'Hors service',   'ST-03',   TRUNC(SYSDATE) - 58);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Anémomètre',               'EQ-005', 'Capteurs',                'Disponible',     'ST-09',   TRUNC(SYSDATE) - 1);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Pluviomètre',              'EQ-006', 'Capteurs',                'Disponible',     'ST-05',   TRUNC(SYSDATE) - 9);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Véhicule V-01',            'EQ-007', 'Véhicules',               'Disponible',     'Tunis',   TRUNC(SYSDATE) - 12);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Véhicule V-02',            'EQ-008', 'Véhicules',               'Disponible',     'Sfax',    TRUNC(SYSDATE) - 7);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Véhicule V-03',            'EQ-009', 'Véhicules',               'En maintenance', 'Sousse',  TRUNC(SYSDATE) - 11);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Moto tout-terrain',        'EQ-010', 'Véhicules',               'Disponible',     'Nabeul',  TRUNC(SYSDATE) - 24);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Camionnette terrain',      'EQ-011', 'Véhicules',               'Disponible',     'Bizerte', TRUNC(SYSDATE) - 5);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Drone de surveillance',    'EQ-012', 'Véhicules',               'Disponible',     'Ariana',  TRUNC(SYSDATE) - 3);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('GPS portable',            'EQ-013', 'Matériel de terrain',     'Disponible',     'ST-12',   TRUNC(SYSDATE) - 190);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Tente de terrain',        'EQ-014', 'Matériel de terrain',     'En maintenance', 'Manouba', TRUNC(SYSDATE) - 7);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Lampe UV terrain',        'EQ-015', 'Matériel de terrain',     'Disponible',     'ST-02',   TRUNC(SYSDATE) - 14);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Trousse premiers secours', 'EQ-016', 'Matériel de terrain',     'Disponible',     'ST-06',   TRUNC(SYSDATE) - 1);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Radio longue portée',      'EQ-017', 'Matériel de terrain',     'Disponible',     'ST-08',   TRUNC(SYSDATE) - 6);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Gilet de sécurité',        'EQ-018', 'Équipements de sécurité', 'Disponible',     'Dépôt-1', TRUNC(SYSDATE) - 10);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Casque de protection',     'EQ-019', 'Équipements de sécurité', 'Disponible',     'Dépôt-2', TRUNC(SYSDATE) - 8);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Harnais de sécurité',      'EQ-020', 'Équipements de sécurité', 'Disponible',     'Dépôt-1', TRUNC(SYSDATE) - 11);
-INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT) VALUES ('Extincteur portable',      'EQ-021', 'Équipements de sécurité', 'Disponible',     'Dépôt-3', TRUNC(SYSDATE) - 210);
+-- Colonnes : NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR
+-- (le fournisseur est retrouvé par son nom : les identifiants viennent de la séquence)
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Thermomètre connecté',     'EQ-001', 'Capteurs',                'Disponible',     'ST-04',   TRUNC(SYSDATE) - 2, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Meteo Sensors TN'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Station météo',            'EQ-002', 'Capteurs',                'Disponible',     'ST-07',   TRUNC(SYSDATE) - 4, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Meteo Sensors TN'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Capteur UV',               'EQ-003', 'Capteurs',                'Disponible',     'ST-01',   TRUNC(SYSDATE) - 20, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Meteo Sensors TN'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Baromètre digital',        'EQ-004', 'Capteurs',                'Hors service',   'ST-03',   TRUNC(SYSDATE) - 58, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Meteo Sensors TN'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Anémomètre',               'EQ-005', 'Capteurs',                'Disponible',     'ST-09',   TRUNC(SYSDATE) - 1, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Meteo Sensors TN'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Pluviomètre',              'EQ-006', 'Capteurs',                'Disponible',     'ST-05',   TRUNC(SYSDATE) - 9, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Meteo Sensors TN'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Véhicule Alpha'   ,            'EQ-007', 'Véhicules',               'Disponible',     'Tunis',   TRUNC(SYSDATE) - 12, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'AutoPro Tunisie'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Véhicule Bravo'   ,            'EQ-008', 'Véhicules',               'Disponible',     'Sfax',    TRUNC(SYSDATE) - 7, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'AutoPro Tunisie'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Véhicule Charlie' ,            'EQ-009', 'Véhicules',               'En maintenance', 'Sousse',  TRUNC(SYSDATE) - 11, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'AutoPro Tunisie'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Moto tout-terrain',        'EQ-010', 'Véhicules',               'Disponible',     'Nabeul',  TRUNC(SYSDATE) - 24, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'AutoPro Tunisie'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Camionnette terrain',      'EQ-011', 'Véhicules',               'Disponible',     'Bizerte', TRUNC(SYSDATE) - 5, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'AutoPro Tunisie'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Drone de surveillance',    'EQ-012', 'Véhicules',               'Disponible',     'Ariana',  TRUNC(SYSDATE) - 3, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'AutoPro Tunisie'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('GPS portable',            'EQ-013', 'Matériel de terrain',     'Disponible',     'ST-12',   TRUNC(SYSDATE) - 190, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Réseau Plus'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Tente de terrain',        'EQ-014', 'Matériel de terrain',     'En maintenance', 'Manouba', TRUNC(SYSDATE) - 7, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Réseau Plus'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Lampe UV terrain',        'EQ-015', 'Matériel de terrain',     'Disponible',     'ST-02',   TRUNC(SYSDATE) - 14, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Réseau Plus'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Trousse premiers secours', 'EQ-016', 'Matériel de terrain',     'Disponible',     'ST-06',   TRUNC(SYSDATE) - 1, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Réseau Plus'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Radio longue portée',      'EQ-017', 'Matériel de terrain',     'Disponible',     'ST-08',   TRUNC(SYSDATE) - 6, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Réseau Plus'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Gilet de sécurité',        'EQ-018', 'Équipements de sécurité', 'Disponible',     'Dépôt-1', TRUNC(SYSDATE) - 10, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Sécurité Pro'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Casque de protection',     'EQ-019', 'Équipements de sécurité', 'Disponible',     'Dépôt-2', TRUNC(SYSDATE) - 8, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Sécurité Pro'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Harnais de sécurité',      'EQ-020', 'Équipements de sécurité', 'Disponible',     'Dépôt-1', TRUNC(SYSDATE) - 11, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Sécurité Pro'));
+INSERT INTO EQUIPEMENT (NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, ID_FOURNISSEUR) VALUES ('Extincteur portable',      'EQ-021', 'Équipements de sécurité', 'Disponible',     'Dépôt-3', TRUNC(SYSDATE) - 210, (SELECT ID_FOURNISSEUR FROM FOURNISSEUR WHERE NOM = 'Sécurité Pro'));
 
 -- Historique : une ligne "Création" par équipement (comme le fait l'application)...
 INSERT INTO EQUIPEMENT_HISTORIQUE (ID_EQUIPEMENT, DATE_CHANGEMENT, CHAMP, NOUVELLE_VALEUR)

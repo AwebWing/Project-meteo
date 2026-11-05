@@ -21,6 +21,8 @@ QString messageErreur(const QSqlError &e)
         return QStringLiteral("Ce code d'équipement existe déjà : le code doit être unique.");
     if (has("ORA-02292", "2292"))
         return QStringLiteral("Des données dépendent de cet équipement et empêchent sa suppression.");
+    if (has("ORA-02291", "2291"))
+        return QStringLiteral("Le fournisseur choisi n'existe plus : choisissez un fournisseur valide.");
     if (has("ORA-02290", "2290"))
         return QStringLiteral("Une valeur ne respecte pas les contraintes de la base de données.");
     if (!QSqlDatabase::database().isOpen())
@@ -75,6 +77,8 @@ Equipment lireEquipment(const QSqlQuery &q)
     const QVariant vDate = q.value(6);
     e.derniereMaintenance = vDate.isNull() ? QDate() : vDate.toDate();
     e.description    = q.value(7).toString();
+    e.idFournisseur  = q.value(8).toInt();
+    e.fournisseurNom = q.value(9).toString();
     return e;
 }
 
@@ -98,8 +102,8 @@ bool Equipment::ajouter(QString *erreur)
     QSqlQuery q;
     q.prepare(QStringLiteral(
         "INSERT INTO EQUIPEMENT "
-        "(ID_EQUIPEMENT, NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, DESCRIPTION) "
-        "VALUES (:id, :nom, :code, :cat, :statut, :loc, :maint, :desc)"));
+        "(ID_EQUIPEMENT, NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, DESCRIPTION, ID_FOURNISSEUR) "
+        "VALUES (:id, :nom, :code, :cat, :statut, :loc, :maint, :desc, :fourn)"));
     q.bindValue(QStringLiteral(":id"),     nouvelId);
     q.bindValue(QStringLiteral(":nom"),    nom);
     q.bindValue(QStringLiteral(":code"),   code.trimmed().isEmpty() ? QVariant(QMetaType(QMetaType::QString)) : code);
@@ -110,6 +114,7 @@ bool Equipment::ajouter(QString *erreur)
                                              ? QVariant(derniereMaintenance)
                                              : QVariant(QMetaType(QMetaType::QDate)));
     q.bindValue(QStringLiteral(":desc"),   description);
+    q.bindValue(QStringLiteral(":fourn"),  idFournisseur);
     if (!run(q, erreur)) return false;
 
     // 3) Historique de création (métier 5)
@@ -128,10 +133,24 @@ QList<Equipment> Equipment::afficher(QString *erreur)
     QList<Equipment> out;
     QSqlQuery q;
     q.prepare(QStringLiteral(
-        "SELECT ID_EQUIPEMENT, NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, DESCRIPTION "
-        "FROM EQUIPEMENT ORDER BY ID_EQUIPEMENT"));
+        "SELECT E.ID_EQUIPEMENT, E.NOM, E.CODE, E.CATEGORIE, E.STATUT, E.LOCALISATION, E.DERNIERE_MAINT, "
+        "E.DESCRIPTION, E.ID_FOURNISSEUR, F.NOM "
+        "FROM EQUIPEMENT E JOIN FOURNISSEUR F ON F.ID_FOURNISSEUR = E.ID_FOURNISSEUR ORDER BY E.ID_EQUIPEMENT"));
     if (!run(q, erreur)) return out;
     while (q.next()) out << lireEquipment(q);
+    return out;
+}
+
+// ============================================================
+//  Fournisseurs sélectionnables (liste déroulante du formulaire)
+// ============================================================
+QList<QPair<int, QString>> Equipment::fournisseurs(QString *erreur)
+{
+    QList<QPair<int, QString>> out;
+    QSqlQuery q;
+    q.prepare(QStringLiteral("SELECT ID_FOURNISSEUR, NOM FROM FOURNISSEUR ORDER BY NOM"));
+    if (!run(q, erreur)) return out;
+    while (q.next()) out << qMakePair(q.value(0).toInt(), q.value(1).toString());
     return out;
 }
 
@@ -145,8 +164,9 @@ bool Equipment::modifier(QString *erreur) const
     // 1) Valeurs actuelles (pour détecter les champs modifiés → historique)
     QSqlQuery old;
     old.prepare(QStringLiteral(
-        "SELECT ID_EQUIPEMENT, NOM, CODE, CATEGORIE, STATUT, LOCALISATION, DERNIERE_MAINT, DESCRIPTION "
-        "FROM EQUIPEMENT WHERE ID_EQUIPEMENT = :id"));
+        "SELECT E.ID_EQUIPEMENT, E.NOM, E.CODE, E.CATEGORIE, E.STATUT, E.LOCALISATION, E.DERNIERE_MAINT, "
+        "E.DESCRIPTION, E.ID_FOURNISSEUR, F.NOM "
+        "FROM EQUIPEMENT E JOIN FOURNISSEUR F ON F.ID_FOURNISSEUR = E.ID_FOURNISSEUR WHERE E.ID_EQUIPEMENT = :id"));
     old.bindValue(QStringLiteral(":id"), id);
     if (!run(old, erreur)) return false;
     if (!old.next()) {
@@ -160,7 +180,7 @@ bool Equipment::modifier(QString *erreur) const
     q.prepare(QStringLiteral(
         "UPDATE EQUIPEMENT SET NOM = :nom, CODE = :code, CATEGORIE = :cat, "
         "STATUT = :statut, LOCALISATION = :loc, DERNIERE_MAINT = :maint, "
-        "DESCRIPTION = :desc WHERE ID_EQUIPEMENT = :id"));
+        "DESCRIPTION = :desc, ID_FOURNISSEUR = :fourn WHERE ID_EQUIPEMENT = :id"));
     q.bindValue(QStringLiteral(":nom"),    nom);
     q.bindValue(QStringLiteral(":code"),   code.trimmed().isEmpty() ? QVariant(QMetaType(QMetaType::QString)) : code);
     q.bindValue(QStringLiteral(":cat"),    categorie);
@@ -170,6 +190,7 @@ bool Equipment::modifier(QString *erreur) const
                                              ? QVariant(derniereMaintenance)
                                              : QVariant(QMetaType(QMetaType::QDate)));
     q.bindValue(QStringLiteral(":desc"),   description);
+    q.bindValue(QStringLiteral(":fourn"),  idFournisseur);
     q.bindValue(QStringLiteral(":id"),     id);
     if (!run(q, erreur)) return false;
 
@@ -186,6 +207,8 @@ bool Equipment::modifier(QString *erreur) const
         && !logChange(id, QStringLiteral("Localisation"), avant.localisation, localisation, erreur)) return false;
     if (avant.description != description
         && !logChange(id, QStringLiteral("Description"), avant.description, description, erreur)) return false;
+    if (avant.idFournisseur != idFournisseur
+        && !logChange(id, QStringLiteral("Fournisseur"), avant.fournisseurNom, fournisseurNom, erreur)) return false;
     if (avant.derniereMaintenance != derniereMaintenance
         && !logChange(id, QStringLiteral("Dernière maintenance"),
                       avant.derniereMaintenance.toString(Qt::ISODate),

@@ -9,6 +9,10 @@
 // ============================================================
 namespace EquipmentService {
 
+// Nom : commence par une lettre, puis lettres / espaces / apostrophe / tiret — aucun chiffre.
+// (Utilisé par la validation ET par le filtre de saisie du formulaire.)
+inline const QString NOM_REGEX = QStringLiteral("^\\p{L}[\\p{L} '’\\-]*$");
+
 // --- Validation CRUD (retourne liste d'erreurs, vide = OK) ---
 QStringList valider(const Equipment &eq, const QList<Equipment> &existants);
 

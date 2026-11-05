@@ -7,10 +7,8 @@
 --
 --  Les modules sont créés dans l'ordre des dépendances (clés étrangères) :
 --
---      ZONE ──┬── AGENT ──────┐
---             │               ├── INTERVENTION ── INTERVENTION_EQUIPEMENT
---      EQUIPEMENT ────────────┘
---      FOURNISSEUR (indépendant)
+--      FOURNISSEUR ── EQUIPEMENT ──┐
+--      ZONE ── AGENT ──────────────┴── INTERVENTION ── INTERVENTION_EQUIPEMENT
 --
 --  ATTENTION : chaque script SUPPRIME puis recrée ses tables ; toutes les
 --  données existantes de METEO sont remplacées par le jeu de démonstration.
@@ -22,17 +20,17 @@ SET ECHO OFF
 PROMPT >>> 1/5  Zones
 @@zones_oracle.sql
 
-PROMPT >>> 2/5  Équipements
+PROMPT >>> 2/5  Fournisseurs (avant les équipements : EQUIPEMENT référence FOURNISSEUR)
+@@fournisseur_oracle.sql
+
+PROMPT >>> 3/5  Équipements
 @@equipement_oracle.sql
 
-PROMPT >>> 3/5  Personnel
+PROMPT >>> 4/5  Personnel
 @@personnel_oracle.sql
 
-PROMPT >>> 4/5  Interventions
+PROMPT >>> 5/5  Interventions
 @@intervention_oracle.sql
-
-PROMPT >>> 5/5  Fournisseurs
-@@fournisseur_oracle.sql
 
 PROMPT >>> Terminé. Vérification :
 SELECT 'ZONE' AS TABLE_NAME, COUNT(*) AS NB_LIGNES FROM ZONE

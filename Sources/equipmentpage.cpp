@@ -173,7 +173,7 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     auto *filterRow = new QHBoxLayout;
     filterRow->setSpacing(8);
     m_search = new QLineEdit;
-    m_search->setPlaceholderText("🔍  Rechercher par nom, code, localisation…");
+    m_search->setPlaceholderText("🔍  Rechercher par nom, code, localisation, fournisseur…");
     filterRow->addWidget(m_search, 1);
 
     m_statutFilter = new QComboBox;
@@ -412,7 +412,8 @@ void EquipmentPage::applyFilters()
         if (!search.isEmpty()) {
             if (!e.nom.toLower().contains(search) &&
                 !e.code.toLower().contains(search) &&
-                !e.localisation.toLower().contains(search))
+                !e.localisation.toLower().contains(search) &&
+                !e.fournisseurNom.toLower().contains(search))
                 continue;
         }
 
@@ -458,6 +459,7 @@ void EquipmentPage::updateDetail()
                 "<b>Catégorie :</b> %2<br>"
                 "<b>Statut :</b> %3<br>"
                 "<b>Localisation :</b> %4<br>"
+                "<b>Fournisseur :</b> %7<br>"
                 "<b>Maintenance :</b> %5<br>%6")
         .arg(e.code.isEmpty() ? "—" : e.code)
         .arg(e.categorie)
@@ -465,7 +467,8 @@ void EquipmentPage::updateDetail()
         .arg(e.localisation)
         .arg(e.derniereMaintenance.toString("dd/MM/yyyy"))
         .arg(e.description.isEmpty() ? QString() :
-             "<br><b>Description :</b><br>" + e.description);
+             "<br><b>Description :</b><br>" + e.description)
+        .arg(e.fournisseurNom);
 
     m_detailBody->setTextFormat(Qt::RichText);
     m_detailBody->setText(body);

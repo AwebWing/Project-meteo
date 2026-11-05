@@ -1,6 +1,7 @@
 #include "equipmentservice.h"
 #include <algorithm>
 #include <cmath>
+#include <QRegularExpression>
 
 namespace EquipmentService {
 
@@ -11,6 +12,11 @@ QStringList valider(const Equipment &eq, const QList<Equipment> &existants)
 
     if (eq.nom.trimmed().isEmpty())
         errors << QStringLiteral("Le nom de l'équipement est obligatoire.");
+    else if (!QRegularExpression(NOM_REGEX).match(eq.nom.trimmed()).hasMatch())
+        errors << QStringLiteral("Le nom doit commencer par une lettre et ne contenir aucun chiffre.");
+
+    if (eq.idFournisseur <= 0)
+        errors << QStringLiteral("Le fournisseur est obligatoire.");
 
     if (eq.categorie.trimmed().isEmpty())
         errors << QStringLiteral("La catégorie est obligatoire.");

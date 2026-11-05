@@ -32,6 +32,7 @@ private:
     QLineEdit *m_code;
     QComboBox *m_categorie;
     QComboBox *m_statut;
+    QComboBox *m_fournisseur;
     QLineEdit *m_localisation;
     QDateEdit *m_date;
     QTextEdit *m_description;
