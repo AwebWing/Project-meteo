@@ -475,7 +475,7 @@ void EmploiPage::onDeleteAgent() {
     int id = currentId();
     if (id < 0) return;
 
-    if (QMessageBox::question(this, "Supprimer agent", "Vouzel-vous vraiment supprimer cet agent ?",
+    if (QMessageBox::question(this, "Supprimer agent", "Voulez-vous vraiment supprimer cet agent ?",
                                                             QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes) {
         for (int i = 0; i < m_agents.size(); ++i) {
             if (m_agents[i].id == id) { m_agents.removeAt(i); break; }

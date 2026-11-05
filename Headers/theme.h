@@ -102,16 +102,31 @@ QTableView, QTableWidget {
     gridline-color: transparent; selection-background-color: #12586a; selection-color: white;
 }
 QTableView::item { padding: 6px; border: none; }
+/* La barre d'en-tete elle-meme doit etre stylee : sinon Windows la peint en blanc (palette claire). */
+QHeaderView { background: #0a1c2a; }
 QHeaderView::section {
-    background: transparent; color: #19c6b7; border: none;
+    background: #0a1c2a; color: #19c6b7; border: none;
     border-bottom: 1px solid #17475a; padding: 8px; font-weight: 600;
 }
-QTableCornerButton::section { background: transparent; border: none; }
+QTableCornerButton::section { background: #0a1c2a; border: none; }
+
+/* ---------- Onglets (QTabWidget) ---------- */
+QTabWidget::pane { border: none; background: transparent; }
+QTabBar { background: transparent; }
+QTabBar::tab {
+    background: transparent; color: #8fb3c2; padding: 8px 18px; margin-right: 4px;
+    border: none; border-bottom: 2px solid transparent; font-weight: 600;
+}
+QTabBar::tab:hover { color: white; }
+QTabBar::tab:selected { color: #19c6b7; border-bottom: 2px solid #19c6b7; }
 
 /* ---------- Dialogues ---------- */
 QDialog, QMessageBox { background: #0a1c2a; }
 QScrollBar:vertical { background: transparent; width: 10px; }
 QScrollBar::handle:vertical { background: #1c5a6e; border-radius: 5px; min-height: 30px; }
+QScrollBar:horizontal { background: transparent; height: 10px; }
+QScrollBar::handle:horizontal { background: #1c5a6e; border-radius: 5px; min-width: 30px; }
+QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 QScrollBar::add-line, QScrollBar::sub-line { height: 0; width: 0; }
 QToolTip { background: #0c2333; color: white; border: 1px solid #19c6b7; }
 QTextEdit { background: #0a1c2a; border: 1px solid #1c5a6e; border-radius: 8px; padding: 6px; }

@@ -1,4 +1,5 @@
 #include "equipment.h"
+#include "dbhelpers.h"
 
 #include <QSqlDatabase>
 #include <QSqlError>
@@ -40,24 +41,7 @@ bool run(QSqlQuery &q, QString *erreur)
     return fail(erreur, q.lastError());
 }
 
-// ------------------------------------------------------------
-//  Transaction RAII : rollback automatique si commit() n'est pas appelé.
-// ------------------------------------------------------------
-class Transaction
-{
-public:
-    Transaction() : m_db(QSqlDatabase::database()), m_active(m_db.isOpen() && m_db.transaction()) {}
-    ~Transaction() { if (m_active) m_db.rollback(); }
-    bool commit()
-    {
-        if (!m_active) return true;
-        m_active = false;
-        return m_db.commit();
-    }
-private:
-    QSqlDatabase m_db;
-    bool m_active;
-};
+using DbHelpers::Transaction;
 
 // ------------------------------------------------------------
 //  Historique interne

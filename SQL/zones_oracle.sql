@@ -1,20 +1,34 @@
 -- ============================================================
 --  Smart Weather - Module "Gestion des Zones" (Adem Nouioui)
---  Script Oracle 11g XE  -  a executer avec l'utilisateur METEO
---  (SQL Developer : ouvrir ce fichier, puis "Executer le script" = F5)
+--  Oracle 11g XE - à exécuter avec l'utilisateur METEO
+--  (SQL Developer : ouvrir ce fichier, puis "Exécuter le script" = F5)
 --
---  Tables creees : ZONE, ZONE_HISTORIQUE
---  Les tables STATION (Tasnim) et INTERVENTION (Bader) referenceront
---  ZONE(ID_ZONE) par une cle etrangere : voir la fin du fichier.
+--  Tables      : ZONE, ZONE_HISTORIQUE
+--  Prérequis   : aucun (ZONE est la table racine : les autres modules
+--                INTERVENTION et AGENT la référencent)
+--  Re-exécutable : OUI - supprime puis recrée ses objets. Pour repartir
+--                de zéro sur toute la base, lancer plutôt install_all.sql
+--                (supprimer ZONE seule retire aussi les clés étrangères
+--                des tables qui la référencent).
+--  Encodage    : fichier en UTF-8 (SQL Developer > Outils > Préférences >
+--                Environnement > Encodage = UTF-8).
 -- ============================================================
+SET DEFINE OFF
 
--- ---------- (optionnel) repartir de zero ----------
--- DROP TABLE ZONE_HISTORIQUE CASCADE CONSTRAINTS;
--- DROP TABLE ZONE CASCADE CONSTRAINTS;
--- DROP SEQUENCE SEQ_ZONE;
--- DROP SEQUENCE SEQ_ZONE_HISTORIQUE;
+-- ---------- Nettoyage (aucune erreur si les objets n'existent pas) ----------
+BEGIN
+    FOR t IN (SELECT table_name FROM user_tables
+              WHERE table_name IN ('ZONE_HISTORIQUE', 'ZONE')) LOOP
+        EXECUTE IMMEDIATE 'DROP TABLE ' || t.table_name || ' CASCADE CONSTRAINTS PURGE';
+    END LOOP;
+    FOR s IN (SELECT sequence_name FROM user_sequences
+              WHERE sequence_name IN ('SEQ_ZONE', 'SEQ_ZONE_HISTORIQUE')) LOOP
+        EXECUTE IMMEDIATE 'DROP SEQUENCE ' || s.sequence_name;
+    END LOOP;
+END;
+/
 
--- ---------- Sequences (auto-increment sous Oracle 11g) ----------
+-- ---------- Séquences (auto-incrément sous Oracle 11g) ----------
 CREATE SEQUENCE SEQ_ZONE            START WITH 1 INCREMENT BY 1 NOCACHE;
 CREATE SEQUENCE SEQ_ZONE_HISTORIQUE START WITH 1 INCREMENT BY 1 NOCACHE;
 
@@ -28,14 +42,17 @@ CREATE TABLE ZONE (
     LONGITUDE      NUMBER(9,6)   DEFAULT 10.1815 NOT NULL,
     STATUT         VARCHAR2(10)  DEFAULT 'Active' NOT NULL,
     CONSTRAINT PK_ZONE        PRIMARY KEY (ID_ZONE),
-    CONSTRAINT UQ_ZONE_CODE   UNIQUE (CODE),
     CONSTRAINT CK_ZONE_VULN   CHECK (VULNERABILITE BETWEEN 0 AND 100),
     CONSTRAINT CK_ZONE_LAT    CHECK (LATITUDE  BETWEEN -90  AND 90),
     CONSTRAINT CK_ZONE_LON    CHECK (LONGITUDE BETWEEN -180 AND 180),
     CONSTRAINT CK_ZONE_STATUT CHECK (STATUT IN ('Active', 'Inactive'))
 );
 
--- ---------- Table ZONE_HISTORIQUE (metier 5 : historique d'evolution) ----------
+-- Code unique SANS tenir compte de la casse : l'application (ZoneService::valider)
+-- compare déjà les codes en insensible à la casse, la base fait donc pareil.
+CREATE UNIQUE INDEX UQ_ZONE_CODE ON ZONE (UPPER(CODE));
+
+-- ---------- Table ZONE_HISTORIQUE (métier 5 : historique d'évolution) ----------
 CREATE TABLE ZONE_HISTORIQUE (
     ID_HIST         NUMBER(10)     NOT NULL,
     ID_ZONE         NUMBER(10)     NOT NULL,
@@ -48,15 +65,16 @@ CREATE TABLE ZONE_HISTORIQUE (
         REFERENCES ZONE (ID_ZONE) ON DELETE CASCADE
 );
 
+-- Sert aussi d'index à la clé étrangère (ID_ZONE en tête).
 CREATE INDEX IDX_HIST_ZONE ON ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT);
 
--- ---------- Triggers : cle primaire automatique si non fournie ----------
+-- ---------- Triggers : clé primaire automatique si non fournie ----------
 CREATE OR REPLACE TRIGGER TRG_ZONE_ID
 BEFORE INSERT ON ZONE
 FOR EACH ROW
 WHEN (NEW.ID_ZONE IS NULL)
 BEGIN
-    SELECT SEQ_ZONE.NEXTVAL INTO :NEW.ID_ZONE FROM DUAL;
+    :NEW.ID_ZONE := SEQ_ZONE.NEXTVAL;
 END;
 /
 
@@ -65,35 +83,29 @@ BEFORE INSERT ON ZONE_HISTORIQUE
 FOR EACH ROW
 WHEN (NEW.ID_HIST IS NULL)
 BEGIN
-    SELECT SEQ_ZONE_HISTORIQUE.NEXTVAL INTO :NEW.ID_HIST FROM DUAL;
+    :NEW.ID_HIST := SEQ_ZONE_HISTORIQUE.NEXTVAL;
 END;
 /
 
--- ---------- Jeu de donnees de demonstration ----------
-INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (1, 'Tunis Centre', 'ZN-01', 62, 36.8065, 10.1815, 'Active');
-INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (2, 'Ariana',       'ZN-02', 48, 36.8665, 10.1647, 'Active');
-INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (3, 'Ben Arous',    'ZN-03', 71, 36.7531, 10.2189, 'Active');
-INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (4, 'Manouba',      'ZN-04', 35, 36.8101, 10.0863, 'Active');
-INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (5, 'Bizerte',      'ZN-05', 55, 37.2744,  9.8739, 'Active');
-INSERT INTO ZONE (ID_ZONE, NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES (6, 'Nabeul',       'ZN-06', 40, 36.4513, 10.7357, 'Active');
+-- ---------- Jeu de données de démonstration ----------
+-- Les identifiants viennent des triggers (pas besoin de recaler les séquences).
+INSERT INTO ZONE (NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES ('Tunis Centre', 'ZN-01', 62, 36.8065, 10.1815, 'Active');
+INSERT INTO ZONE (NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES ('Ariana',       'ZN-02', 48, 36.8665, 10.1647, 'Active');
+INSERT INTO ZONE (NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES ('Ben Arous',    'ZN-03', 71, 36.7531, 10.2189, 'Active');
+INSERT INTO ZONE (NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES ('Manouba',      'ZN-04', 35, 36.8101, 10.0863, 'Active');
+INSERT INTO ZONE (NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES ('Bizerte',      'ZN-05', 55, 37.2744,  9.8739, 'Active');
+INSERT INTO ZONE (NOM, CODE, VULNERABILITE, LATITUDE, LONGITUDE, STATUT) VALUES ('Nabeul',       'ZN-06', 40, 36.4513, 10.7357, 'Active');
 
-INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR) VALUES (3, TO_DATE('2026-09-01 09:00', 'YYYY-MM-DD HH24:MI'), 'Vulnérabilité', '65', '71');
-INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR) VALUES (3, TO_DATE('2026-09-04 09:00', 'YYYY-MM-DD HH24:MI'), 'Statut', 'Inactive', 'Active');
-INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR) VALUES (5, TO_DATE('2026-09-07 09:00', 'YYYY-MM-DD HH24:MI'), 'Vulnérabilité', '50', '55');
+-- Historique : une ligne "Création" par zone (comme le fait l'application)...
+INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, NOUVELLE_VALEUR)
+SELECT ID_ZONE, TRUNC(SYSDATE) - 60 + 9/24, 'Création', NOM FROM ZONE;
 
--- Les inserts explicites ont utilise les ids 1 a 6 : la sequence reprend a 7.
-DROP SEQUENCE SEQ_ZONE;
-CREATE SEQUENCE SEQ_ZONE START WITH 7 INCREMENT BY 1 NOCACHE;
+-- ... puis quelques modifications (dates relatives : la démo reste cohérente).
+INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR)
+SELECT ID_ZONE, TRUNC(SYSDATE) - 45 + 9/24, 'Vulnérabilité', '65', '71' FROM ZONE WHERE CODE = 'ZN-03';
+INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR)
+SELECT ID_ZONE, TRUNC(SYSDATE) - 42 + 9/24, 'Statut', 'Inactive', 'Active' FROM ZONE WHERE CODE = 'ZN-03';
+INSERT INTO ZONE_HISTORIQUE (ID_ZONE, DATE_CHANGEMENT, CHAMP, ANCIENNE_VALEUR, NOUVELLE_VALEUR)
+SELECT ID_ZONE, TRUNC(SYSDATE) - 39 + 9/24, 'Vulnérabilité', '50', '55' FROM ZONE WHERE CODE = 'ZN-05';
 
 COMMIT;
-
--- ============================================================
---  A executer PLUS TARD, quand les autres membres auront cree leurs tables
---  (la suppression d'une zone referencee sera alors refusee par Oracle :
---   ORA-02292, geree par l'application qui propose la desactivation) :
---
---  ALTER TABLE STATION      ADD CONSTRAINT FK_STATION_ZONE
---      FOREIGN KEY (ID_ZONE) REFERENCES ZONE (ID_ZONE);
---  ALTER TABLE INTERVENTION ADD CONSTRAINT FK_INTERVENTION_ZONE
---      FOREIGN KEY (ID_ZONE) REFERENCES ZONE (ID_ZONE);
--- ============================================================

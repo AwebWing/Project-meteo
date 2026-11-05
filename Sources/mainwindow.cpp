@@ -8,6 +8,8 @@
 #include "uihelpers.h"
 #include "zonerepository.h"
 #include "zonesmodule.h"
+#include "fournisseurrepository.h"
+#include "smartsupply.h"
 
 #include <QButtonGroup>
 #include <QDateTime>
@@ -27,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     m_zoneRepo = new ZoneRepository(this);
 
     m_equipmentRepo = new EquipmentRepository(this);
+    m_fournisseurRepo = new FournisseurRepository(this);
 
     // 1. Initialize Modules
     m_accueilPage = new AccueilPage(this);
@@ -34,6 +37,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     m_zonesModule = new ZonesModule(m_zoneRepo, this);
     m_interventionWidget = new InterventionWidget(this);
     m_equipmentPage = new EquipmentPage(m_equipmentRepo, this);
+    m_smartSupply = new SmartSupply(m_fournisseurRepo, this);
 
     // 2. Add to StackedWidget (mapped to .ui file)
     ui->m_stack->addWidget(m_accueilPage);          // Index 0
@@ -41,6 +45,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     ui->m_stack->addWidget(m_zonesModule);          // Index 2
     ui->m_stack->addWidget(m_interventionWidget);   // Index 3
     ui->m_stack->addWidget(m_equipmentPage);        // Index 4
+    ui->m_stack->addWidget(m_smartSupply);           // Index 5
 
     ui->m_stack->setCurrentIndex(0);
 
@@ -52,6 +57,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     m_navGroup->addButton(ui->btn_zones, 2);
     m_navGroup->addButton(ui->btn_interventions, 3);
     m_navGroup->addButton(ui->btn_equipements, 4);
+    m_navGroup->addButton(ui->btn_fournisseurs, 5);
 
     ui->btn_accueil->setChecked(true);
 

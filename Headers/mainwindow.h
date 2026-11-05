@@ -6,6 +6,8 @@ class QStackedWidget;
 class QButtonGroup;
 class ZoneRepository;
 class EquipmentRepository;
+class FournisseurRepository;
+class SmartSupply;
 class InterventionWidget;
 class EmploiPage;
 class AccueilPage;
@@ -33,10 +35,12 @@ private:
     QButtonGroup       *m_navGroup{nullptr};
     ZoneRepository      *m_zoneRepo{nullptr};
     EquipmentRepository *m_equipmentRepo{nullptr};
+    FournisseurRepository *m_fournisseurRepo{nullptr};
 
     AccueilPage         *m_accueilPage{nullptr};
     EmploiPage          *m_emploiPage{nullptr};
     ZonesModule         *m_zonesModule{nullptr};
     InterventionWidget  *m_interventionWidget{nullptr};
     EquipmentPage       *m_equipmentPage{nullptr};
+    SmartSupply         *m_smartSupply{nullptr};
 };

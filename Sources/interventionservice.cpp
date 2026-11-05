@@ -72,9 +72,10 @@ bool InterventionService::update(const Intervention &i, [[maybe_unused]] const Q
     return true;
 }
 
-bool InterventionService::remove([[maybe_unused]] int id, [[maybe_unused]] QString *err) {
-    if (s_interventions.contains(id)) { s_interventions.remove(id); return true; }
-    if (err) *err = "Introuvable"; return false;
+bool InterventionService::remove(int id, QString *err) {
+    if (s_interventions.remove(id) > 0) return true;
+    if (err) *err = "Introuvable";
+    return false;
 }
 
 bool InterventionService::cancel([[maybe_unused]] int id, [[maybe_unused]] QString *err) {
@@ -100,7 +101,7 @@ bool InterventionService::load(int id, Intervention &i) {
     return false;
 }
 
-QVector<Intervention> InterventionService::list(const InterventionFilter &f, QString *err) {
+QVector<Intervention> InterventionService::list([[maybe_unused]] const InterventionFilter &f, [[maybe_unused]] QString *err) {
     if (s_interventions.isEmpty()) {
         s_interventions[1] = createStubIntervention(1, "Inondation", "Haute", "En cours", "Tunis Centre");
         s_interventions[2] = createStubIntervention(2, "Vent fort", "Critique", "Planifiée", "Ariana");
@@ -119,7 +120,7 @@ PriorityResult InterventionService::recalculerPriorite(int id, bool appliquer) {
     return r;
 }
 
-QVector<Intervention> InterventionService::interventionsEnRetard(bool onlyLate) {
+QVector<Intervention> InterventionService::interventionsEnRetard([[maybe_unused]] bool onlyLate) {
     QVector<Intervention> out;
     for (auto it = s_interventions.begin(); it != s_interventions.end(); ++it) {
         const Intervention &val = it.value();
@@ -128,15 +129,15 @@ QVector<Intervention> InterventionService::interventionsEnRetard(bool onlyLate) 
     return out;
 }
 
-QStringList InterventionService::prerequis(const Intervention &i) {
+QStringList InterventionService::prerequis([[maybe_unused]] const Intervention &i) {
     return {"Données de démonstration : prêt."};
 }
 
-bool InterventionService::verifierPrerequis(int id, QString *err) {
+bool InterventionService::verifierPrerequis(int id, [[maybe_unused]] QString *err) {
     return get(id).has_value();
 }
 
-DurationEstimate InterventionService::estimerDuree(const QString &type, int idZone) {
+DurationEstimate InterventionService::estimerDuree([[maybe_unused]] const QString &type, [[maybe_unused]] int idZone) {
     DurationEstimate d; d.heures = 12.5; d.echantillon = 5; d.base = "Dummy"; return d;
 }
 
@@ -146,7 +147,7 @@ QStringList InterventionService::controleCloture(const Intervention &i) {
     return e;
 }
 
-bool InterventionService::cloturer(int id, const QString &compteRendu, const QDateTime &fin, QString *err) {
+bool InterventionService::cloturer(int id, const QString &compteRendu, const QDateTime &fin, [[maybe_unused]] QString *err) {
     auto it = s_interventions.find(id);
     if (it == s_interventions.end()) return false;
     Intervention i = it.value(); i.statut = Statut::Terminee; i.compteRendu = compteRendu; i.fin = fin;
@@ -154,11 +155,11 @@ bool InterventionService::cloturer(int id, const QString &compteRendu, const QDa
     return true;
 }
 
-Counts InterventionService::repartition(const QString &dimension, const InterventionFilter &f) {
+Counts InterventionService::repartition([[maybe_unused]] const QString &dimension, [[maybe_unused]] const InterventionFilter &f) {
     return { {"En cours", 1}, {"Planifiée", 2} };
 }
 
-QVector<HistoryEntry> InterventionService::historique(int id) {
+QVector<HistoryEntry> InterventionService::historique([[maybe_unused]] int id) {
     return { {QDateTime::currentDateTime(), "Création", "Dummy"} };
 }
 
@@ -201,9 +202,9 @@ QVector<IdLabel> InterventionService::equipements() {
     return { {1, "Equipement 1"}, {2, "Equipement 2"} };
 }
 
-bool InterventionService::affecterEquipement(int idIntervention, int idEquipement, QString *err) {
+bool InterventionService::affecterEquipement([[maybe_unused]] int idIntervention, [[maybe_unused]] int idEquipement, [[maybe_unused]] QString *err) {
     return true;
 }
 
-void InterventionService::log(int id, const QString &action, const QString &detail) {}
-void InterventionService::libererEquipements(int idIntervention) {}
+void InterventionService::log([[maybe_unused]] int id, [[maybe_unused]] const QString &action, [[maybe_unused]] const QString &detail) {}
+void InterventionService::libererEquipements([[maybe_unused]] int idIntervention) {}

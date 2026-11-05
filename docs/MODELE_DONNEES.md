@@ -1,15 +1,22 @@
-# Smart Weather — Gestion des Zones : modèles de données
+# Smart Weather — Modèles de données
 
-Module : **Stations & Zones — Zones** (Adem Nouioui). Base : Oracle 11g XE, utilisateur `meteo`.
-Script de création : [`SQL/zones_oracle.sql`](../SQL/zones_oracle.sql).
+Base : **Oracle 11g XE**, utilisateur `meteo`. Scripts de création : dossier [`SQL/`](../SQL/)
+(point d'entrée : [`install_all.sql`](../SQL/install_all.sql)).
 
 ## 1. Modèle Entité / Association (MCD)
 
 ```mermaid
 erDiagram
-    ZONE ||--o{ ZONE_HISTORIQUE : "possède (1,1) - (0,N)"
-    ZONE ||--o{ STATION : "regroupe (1,1) - (0,N)"
+    ZONE ||--o{ ZONE_HISTORIQUE : "historique (1,1) - (0,N)"
     ZONE ||--o{ INTERVENTION : "accueille (1,1) - (0,N)"
+    ZONE |o--o{ AGENT : "affecté à (0,1) - (0,N)"
+    AGENT |o--o{ INTERVENTION : "responsable (0,1) - (0,N)"
+    INTERVENTION ||--o{ INTERVENTION_HISTORIQUE : "historique"
+    INTERVENTION ||--o{ INTERVENTION_EQUIPEMENT : "mobilise"
+    EQUIPEMENT ||--o{ INTERVENTION_EQUIPEMENT : "est engagé dans"
+    EQUIPEMENT ||--o{ EQUIPEMENT_HISTORIQUE : "historique"
+    AGENT ||--o{ AGENT_HISTORIQUE : "historique"
+    FOURNISSEUR ||--o{ FOURNISSEUR_HISTORIQUE : "historique"
 
     ZONE {
         int    id_zone PK
@@ -20,65 +27,102 @@ erDiagram
         number longitude
         string statut
     }
-    ZONE_HISTORIQUE {
-        int    id_hist PK
-        date   date_changement
-        string champ
-        string ancienne_valeur
-        string nouvelle_valeur
+    EQUIPEMENT {
+        int    id_equipement PK
+        string nom
+        string code UK
+        string categorie
+        string statut
+        string localisation
+        date   derniere_maint
     }
-    STATION {
-        int id_station PK
+    AGENT {
+        int    id_agent PK
+        string nom
+        string prenom
+        string role
+        string statut
+        int    id_zone FK
+        string quart_travail
     }
     INTERVENTION {
-        int id_intervention PK
+        int    id_intervention PK
+        string type
+        string priorite
+        string statut
+        date   date_debut
+        date   date_fin
+        int    id_zone FK
+        int    id_agent FK
+    }
+    FOURNISSEUR {
+        int    id_fournisseur PK
+        string nom
+        string type
+        number note
+        number delai
+        date   date_debut
+        date   date_fin
+        string statut
     }
 ```
 
-`STATION` (Tasnim) et `INTERVENTION` (Bader) sont gérées par les autres membres : seule leur clé étrangère vers `ZONE` est
-décrite ici. Cardinalités : une zone possède 0 à N stations / interventions / lignes d'historique ; chacune appartient à
-exactement une zone.
+Les tables `*_HISTORIQUE` ont toutes la même forme (`id_hist`, clé étrangère, `date_changement`, `champ`,
+`ancienne_valeur`, `nouvelle_valeur`). La table `STATION` n'existe pas encore : elle référencera `ZONE(id_zone)`
+(la couverture réseau vaut 0 % en attendant).
 
 ## 2. Modèle relationnel (MLD)
 
 ```
-ZONE            (#id_zone, nom, code, vulnerabilite, latitude, longitude, statut)
-ZONE_HISTORIQUE (#id_hist, id_zone*, date_changement, champ, ancienne_valeur, nouvelle_valeur)
-STATION         (#id_station, ..., id_zone*)        -- géré par Tasnim
-INTERVENTION    (#id_intervention, ..., id_zone*)   -- géré par Bader
+ZONE                    (#id_zone, nom, code, vulnerabilite, latitude, longitude, statut)
+EQUIPEMENT              (#id_equipement, nom, code, categorie, statut, localisation, derniere_maint, description)
+AGENT                   (#id_agent, nom, prenom, role, statut, id_zone*, quart_travail, email, telephone)
+INTERVENTION            (#id_intervention, type, priorite, statut, date_debut, date_fin, description,
+                         responsable, compte_rendu, id_zone*, id_agent*)
+INTERVENTION_EQUIPEMENT (#id_intervention*, #id_equipement*)
+FOURNISSEUR             (#id_fournisseur, nom, type, contact, email, telephone, adresse, gouvernorat,
+                         note, delai, date_debut, date_fin, statut)
+<ENTITE>_HISTORIQUE     (#id_hist, id_<entite>*, date_changement, champ, ancienne_valeur, nouvelle_valeur)
 ```
 
-`#` clé primaire · `*` clé étrangère vers `ZONE(id_zone)`.
-Contraintes : `code` unique · `0 ≤ vulnerabilite ≤ 100` · `-90 ≤ latitude ≤ 90` · `-180 ≤ longitude ≤ 180` ·
-`statut ∈ {Active, Inactive}` · suppression d'une zone → son historique est supprimé (`ON DELETE CASCADE`) ;
-suppression refusée si des stations / interventions la référencent.
+`#` clé primaire · `*` clé étrangère.
 
-## 3. Modèle physique (MPD, Oracle 11g)
+### Comportement des clés étrangères
+| Clé étrangère | Suppression du parent |
+|---|---|
+| `*_HISTORIQUE` → entité | **cascade** : l'historique disparaît avec l'entité |
+| `INTERVENTION.id_zone` → ZONE | **refusée** (ORA-02292, l'application propose de désactiver la zone) |
+| `INTERVENTION_EQUIPEMENT.id_equipement` → EQUIPEMENT | **refusée** (on garde la traçabilité des interventions passées) |
+| `INTERVENTION_EQUIPEMENT.id_intervention` → INTERVENTION | **cascade** : l'équipement est libéré |
+| `AGENT.id_zone` → ZONE · `INTERVENTION.id_agent` → AGENT | **mise à NULL** (agent « sans zone » / intervention « sans responsable ») |
 
-| Table | Colonne | Type | Contraintes |
-|---|---|---|---|
-| **ZONE** | ID_ZONE | NUMBER(10) | PK (`PK_ZONE`), alimentée par `SEQ_ZONE` |
-| | NOM | VARCHAR2(100) | NOT NULL |
-| | CODE | VARCHAR2(20) | NOT NULL, UNIQUE (`UQ_ZONE_CODE`) |
-| | VULNERABILITE | NUMBER(4,1) | NOT NULL, défaut 0, CHECK 0..100 |
-| | LATITUDE | NUMBER(9,6) | NOT NULL, défaut 36.8065, CHECK -90..90 |
-| | LONGITUDE | NUMBER(9,6) | NOT NULL, défaut 10.1815, CHECK -180..180 |
-| | STATUT | VARCHAR2(10) | NOT NULL, défaut 'Active', CHECK IN ('Active','Inactive') |
-| **ZONE_HISTORIQUE** | ID_HIST | NUMBER(10) | PK, alimentée par `SEQ_ZONE_HISTORIQUE` |
-| | ID_ZONE | NUMBER(10) | NOT NULL, FK → ZONE(ID_ZONE) ON DELETE CASCADE |
-| | DATE_CHANGEMENT | DATE | NOT NULL, défaut SYSDATE |
-| | CHAMP | VARCHAR2(50) | NOT NULL |
-| | ANCIENNE_VALEUR / NOUVELLE_VALEUR | VARCHAR2(200) | — |
+Toutes les clés étrangères sont indexées (Oracle ne le fait pas automatiquement), soit par un index dédié
+(`IDX_AGENT_ZONE`, `IDX_INTERV_ZONE`, `IDX_INTERV_AGENT`, `IDX_IE_EQUIPEMENT`), soit par l'index
+`IDX_HIST_*` (clé étrangère + `date_changement`) des tables d'historique.
 
-Oracle 11g n'a pas de colonnes `IDENTITY` : l'auto-incrémentation = séquence + trigger `BEFORE INSERT`
-(`TRG_ZONE_ID`, `TRG_ZONE_HISTORIQUE_ID`).
+## 3. Modèle physique (MPD) — contraintes principales
+
+| Table | Contraintes |
+|---|---|
+| **ZONE** | `vulnerabilite` 0..100 (défaut 0) · `latitude` -90..90 · `longitude` -180..180 · `statut` ∈ {Active, Inactive} · `code` unique **sans tenir compte de la casse** (index `UQ_ZONE_CODE` sur `UPPER(code)`, comme `ZoneService::valider`) |
+| **EQUIPEMENT** | `categorie` ∈ {Capteurs, Véhicules, Matériel de terrain, Équipements de sécurité} · `statut` ∈ {Disponible, En maintenance, Hors service} · `localisation` obligatoire · `code` facultatif mais unique (insensible à la casse, `UQ_EQUIPEMENT_CODE`) |
+| **AGENT** | `role` ∈ {Technicien Météo, Météorologue, Superviseur, Agent de terrain} · `statut` ∈ {En service, Disponible, En congé, Formation} · `quart_travail` ∈ {Matin (06h-14h), Après-midi (14h-22h), Nuit (22h-06h)} |
+| **INTERVENTION** | `type` ∈ {Inondation, Chaleur, Vent fort, Maintenance station, Inspection, Autre} · `priorite` ∈ {Faible, Moyenne, Haute, Critique} · `statut` ∈ {Planifiée, En cours, Terminée, Annulée} · `date_fin ≥ date_debut` · une intervention *Terminée* exige un `compte_rendu` d'au moins 20 caractères · `id_zone` obligatoire |
+| **FOURNISSEUR** | `type` ∈ {Capteurs et stations, Maintenance, Énergie, Réseau et télécom, Informatique} · `note` 1..5 · `delai` 1..365 · `date_fin ≥ date_debut` · `statut` ∈ {Actif, Suspendu, Archivé} |
+
+Ces listes de valeurs sont celles du code C++ (`equipment.h`, `fournisseur.h`, `intervention.h`, `emploipage.*`) :
+en ajouter une dans le code impose de modifier la contrainte `CHECK` correspondante (sinon Oracle répond ORA-02290).
+
+Oracle 11g n'a pas de colonnes `IDENTITY` : l'auto-incrémentation = séquence (`SEQ_<TABLE>`) + trigger
+`BEFORE INSERT` (`TRG_*_ID`). L'application lit elle-même `SEQ_<TABLE>.NEXTVAL` pour connaître l'identifiant avant
+d'écrire l'historique ; le trigger sert aux insertions manuelles dans SQL Developer.
 
 ## 4. Correspondance avec le code (architecture modèle-vue)
 
 | Couche | Fichiers | Rôle |
 |---|---|---|
-| Modèle | `Headers/zone.h`, `Sources/zone.cpp` | Entité `Zone` : `ajouter()`, `modifier()`, `supprimer(id)`, `afficher()` — requêtes préparées (`prepare` + `bindValue`) |
+| Modèle | `Headers/zone.h`, `equipment.h`, `fournisseur.h` + `Sources/zone.cpp`, `equipment.cpp`, `fournisseur.cpp` | Entité : `ajouter()`, `modifier()`, `supprimer(id)`, `afficher()` — requêtes préparées (`prepare` + `bindValue`), historique champ par champ, transaction (`dbhelpers.h`) |
 | Modèle | `Headers/connection.h`, `Sources/connection.cpp` | Connexion Oracle unique (Singleton) |
-| Métier | `Sources/zoneservice.cpp` | Les 5 métiers avancés + validations (sans accès BD) |
-| Intermédiaire | `Sources/zonerepository.cpp` | Appelle `Zone`, garde la liste en mémoire, émet `changed()` pour rafraîchir l'affichage |
-| Vue | `zonespage.*`, `zonedialog.*`, `zonedetailsdialog.*`, `coveragepage.*`, `mapwidget.*` | Interface : aucune requête SQL |
+| Métier | `zoneservice.cpp`, `equipmentservice.cpp`, `interventionservice.cpp` | Règles métier + validations (sans accès BD) |
+| Intermédiaire | `zonerepository.cpp`, `equipmentrepository.cpp`, `fournisseurrepository.cpp` | Appelle l'entité, garde la liste en mémoire, émet `changed()` |
+| Vue | `*page.*`, `*dialog.*`, `coveragepage.*`, `mapwidget.*`, `smartsupply.*` | Interface : aucune requête SQL |

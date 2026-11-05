@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QFont>
 #include <QMessageBox>
+#include <QSqlQuery>
 
 int main(int argc, char *argv[])
 {
@@ -23,6 +24,12 @@ int main(int argc, char *argv[])
             QStringLiteral("Connexion à la base Oracle impossible.\n\n%1\n\n"
                            "Vérifiez la source ODBC « smartweatherDSN », l'utilisateur et le mot de passe.")
                 .arg(c.lastError()));
+    } else {
+        qDebug() << ">>> DATABASE CONNECTION SUCCESSFUL <<<";
+        QSqlQuery q("SELECT user FROM dual");
+        if (q.next()) {
+            qDebug() << ">>> CURRENT ORACLE USER:" << q.value(0).toString() << "<<<";
+        }
     }
 
     MainWindow w;

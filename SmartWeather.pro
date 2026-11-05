@@ -10,70 +10,69 @@ INCLUDEPATH += Headers
 
 # Source files
 SOURCES += \
-    Sources/connection.cpp \
-    Sources/main.cpp \
-    Sources/zone.cpp \
-    Sources/mainwindow.cpp \
     Sources/accueilpage.cpp \
-    Sources/zonespage.cpp \
-    Sources/zonesmodule.cpp \
-    Sources/zoneservice.cpp \
-    Sources/zonerepository.cpp \
-    Sources/zonedialog.cpp \
-    Sources/zonedetailsdialog.cpp \
-    Sources/interventionswindow.cpp \
+    Sources/barchartwidget.cpp \
+    Sources/connection.cpp \
+    Sources/coveragepage.cpp \
+    Sources/emploipage.cpp \
+    Sources/equipment.cpp \
+    Sources/equipmentdialog.cpp \
+    Sources/equipmentpage.cpp \
+    Sources/equipmentrepository.cpp \
+    Sources/equipmentservice.cpp \
+    Sources/fournisseur.cpp \
+    Sources/fournisseurrepository.cpp \
+    Sources/interventiondialog.cpp \
     Sources/interventionservice.cpp \
     Sources/interventionwidget.cpp \
-    Sources/interventiondialog.cpp \
-    Sources/emploipage.cpp \
-    Sources/equipmentpage.cpp \
-    Sources/equipmentdialog.cpp \
-    Sources/equipmentservice.cpp \
-    Sources/equipment.cpp \
-    Sources/equipmentrepository.cpp \
-    Sources/database.cpp \
-    Sources/chartwidget.cpp \
-    Sources/barchartwidget.cpp \
+    Sources/main.cpp \
+    Sources/mainwindow.cpp \
     Sources/mapwidget.cpp \
-    Sources/coveragepage.cpp \
-    Sources/intervention.cpp
+    Sources/smartsupply.cpp \
+    Sources/zone.cpp \
+    Sources/zonedetailsdialog.cpp \
+    Sources/zonedialog.cpp \
+    Sources/zonerepository.cpp \
+    Sources/zoneservice.cpp \
+    Sources/zonesmodule.cpp \
+    Sources/zonespage.cpp
 
 # Header files
 HEADERS += \
-    Headers/connection.h \
-    Headers/mainwindow.h \
     Headers/accueilpage.h \
-    Headers/zonespage.h \
-    Headers/zonesmodule.h \
-    Headers/zoneservice.h \
-    Headers/zonerepository.h \
-    Headers/zonedialog.h \
-    Headers/zonedetailsdialog.h \
-    Headers/interventionswindow.h \
+    Headers/barchartwidget.h \
+    Headers/connection.h \
+    Headers/coveragepage.h \
+    Headers/dbhelpers.h \
+    Headers/emploipage.h \
+    Headers/equipment.h \
+    Headers/equipmentdialog.h \
+    Headers/equipmentpage.h \
+    Headers/equipmentrepository.h \
+    Headers/equipmentservice.h \
+    Headers/fournisseur.h \
+    Headers/fournisseurrepository.h \
+    Headers/intervention.h \
+    Headers/interventiondialog.h \
     Headers/interventionservice.h \
     Headers/interventionwidget.h \
-    Headers/interventiondialog.h \
-    Headers/emploipage.h \
-    Headers/equipmentpage.h \
-    Headers/equipmentdialog.h \
-    Headers/equipmentservice.h \
-    Headers/equipmentrepository.h \
-    Headers/database.h \
-    Headers/chartwidget.h \
-    Headers/barchartwidget.h \
+    Headers/mainwindow.h \
     Headers/mapwidget.h \
-    Headers/coveragepage.h \
-    Headers/intervention.h \
-    Headers/equipment.h \
+    Headers/smartsupply.h \
     Headers/theme.h \
     Headers/uihelpers.h \
-    Headers/zone.h
+    Headers/zone.h \
+    Headers/zonedetailsdialog.h \
+    Headers/zonedialog.h \
+    Headers/zonerepository.h \
+    Headers/zoneservice.h \
+    Headers/zonesmodule.h \
+    Headers/zonespage.h
 
 # UI files
 FORMS += \
-    Forms/mainwindow.ui \
-    Forms/interventionswindow.ui \
-    Forms/interventiondialog.ui
+    Forms/interventiondialog.ui \
+    Forms/mainwindow.ui
 
 # Resources
 RESOURCES += resources/resources.qrc
