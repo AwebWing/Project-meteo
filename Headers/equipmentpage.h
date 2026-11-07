@@ -15,6 +15,7 @@ class QChart;
 class QChartView;
 class QPieSeries;
 class QTabWidget;
+class StoragePlanWidget;
 
 // ---------------------------------------------------------------
 //  EquipmentPage : interface principale de gestion des équipements
@@ -36,6 +37,9 @@ private slots:
     void onAdd();
     void onEdit();
     void onDelete();
+    void onPlanMove(int id, const QString &nouvelleLocalisation);
+    void onPlanSelect(int id);
+    void onPlanAddRack();
 
 private:
     int  currentId() const;   // id de la ligne sélectionnée (-1 si aucune)
@@ -62,6 +66,10 @@ private:
 
     // Panneau détail
     QLabel *m_detailTitle, *m_detailBody;
+
+    // Plan du dépôt (glisser-déposer)
+    StoragePlanWidget *m_plan{nullptr};
+    QLabel            *m_planInfo{nullptr};
 
     // Graphique
     QPieSeries  *m_pieSeries{nullptr};

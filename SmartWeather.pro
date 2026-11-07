@@ -29,6 +29,7 @@ SOURCES += \
     Sources/mainwindow.cpp \
     Sources/mapwidget.cpp \
     Sources/smartsupply.cpp \
+    Sources/storageplanwidget.cpp \
     Sources/zone.cpp \
     Sources/zonedetailsdialog.cpp \
     Sources/zonedialog.cpp \
@@ -59,6 +60,7 @@ HEADERS += \
     Headers/mainwindow.h \
     Headers/mapwidget.h \
     Headers/smartsupply.h \
+    Headers/storageplanwidget.h \
     Headers/theme.h \
     Headers/uihelpers.h \
     Headers/zone.h \

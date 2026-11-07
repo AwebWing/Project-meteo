@@ -2,6 +2,7 @@
 #include "equipmentdialog.h"
 #include "equipmentrepository.h"
 #include "equipmentservice.h"
+#include "storageplanwidget.h"
 #include "theme.h"
 #include "uihelpers.h"
 
@@ -11,6 +12,7 @@
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QInputDialog>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -333,6 +335,58 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
 
     tabs->addTab(statsTab, QStringLiteral("Statistiques"));
 
+    // ============================================================
+    //  TAB 3: PLAN DU DÉPÔT (glisser-déposer)
+    //  Une étagère = une valeur de LOCALISATION. Déposer une tuile sur une
+    //  autre étagère met à jour la colonne LOCALISATION dans Oracle.
+    // ============================================================
+    auto *planTab = new QWidget;
+    auto *planLayout = new QHBoxLayout(planTab);
+    planLayout->setContentsMargins(20, 20, 20, 20);
+    planLayout->setSpacing(16);
+
+    QVBoxLayout *planCardV = nullptr;
+    auto *planCard = makeCard(planCardV);
+    auto *planTop = new QHBoxLayout;
+    auto *planTitle = new QLabel(QStringLiteral("🗺  Plan du dépôt"));
+    planTitle->setObjectName("cardTitle");
+    auto *planHint = new QLabel(QStringLiteral("Glissez un équipement sur une autre étagère pour le déplacer (Ctrl + molette : zoom)"));
+    planHint->setObjectName("muted");
+    auto *btnRack = new QPushButton(QStringLiteral("➕  Nouvelle étagère"));
+    btnRack->setObjectName("primary");
+    planTop->addWidget(planTitle);
+    planTop->addWidget(planHint, 1);
+    planTop->addWidget(btnRack);
+    planCardV->addLayout(planTop);
+    planCardV->addWidget(makeSeparator());
+    m_plan = new StoragePlanWidget;
+    planCardV->addWidget(m_plan, 1);
+    planLayout->addWidget(planCard, 1);
+
+    QVBoxLayout *planInfoV = nullptr;
+    auto *planInfoCard = makeCard(planInfoV);
+    planInfoCard->setFixedWidth(270);
+    auto *planInfoTitle = new QLabel(QStringLiteral("Détail"));
+    planInfoTitle->setObjectName("cardTitle");
+    m_planInfo = new QLabel(QStringLiteral("Cliquez sur un équipement du plan."));
+    m_planInfo->setWordWrap(true);
+    m_planInfo->setTextFormat(Qt::RichText);
+    m_planInfo->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+    planInfoV->addWidget(planInfoTitle);
+    planInfoV->addWidget(makeSeparator());
+    planInfoV->addWidget(m_planInfo, 1);
+    auto *legende = new QLabel(QStringLiteral(
+        "<span style='color:#3FC98F'>■</span> Disponible &nbsp; "
+        "<span style='color:#E49740'>■</span> En maintenance<br>"
+        "<span style='color:#E05A5B'>■</span> Hors service &nbsp; "
+        "<span style='color:#E49740'>⚠</span> Maintenance en retard"));
+    legende->setObjectName("muted");
+    legende->setWordWrap(true);
+    planInfoV->addWidget(legende);
+    planLayout->addWidget(planInfoCard);
+
+    tabs->addTab(planTab, QStringLiteral("Plan du dépôt"));
+
     root->addWidget(tabs, 1);
 
     // ── Connections ─────────────────────────────────────────────
@@ -343,6 +397,9 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
     connect(btnAdd,    &QPushButton::clicked, this, &EquipmentPage::onAdd);
     connect(m_btnEdit, &QPushButton::clicked, this, &EquipmentPage::onEdit);
     connect(m_btnDelete,&QPushButton::clicked, this, &EquipmentPage::onDelete);
+    connect(m_plan, &StoragePlanWidget::equipmentMoved,    this, &EquipmentPage::onPlanMove);
+    connect(m_plan, &StoragePlanWidget::equipmentSelected, this, &EquipmentPage::onPlanSelect);
+    connect(btnRack, &QPushButton::clicked, this, &EquipmentPage::onPlanAddRack);
     connect(m_table, &QTableView::doubleClicked, this, [this](const QModelIndex &) { onEdit(); });
 
     refresh();
@@ -351,6 +408,7 @@ EquipmentPage::EquipmentPage(EquipmentRepository *repo, QWidget *parent)
 void EquipmentPage::refresh()
 {
     const auto stats = EquipmentService::statistiques(m_repo->all());
+    m_plan->setEquipments(m_repo->all());
 
     m_kpiTotal->setText(QString::number(stats.total));
     m_kpiDispo->setText(QString::number(stats.disponibles));
@@ -532,4 +590,63 @@ void EquipmentPage::selectById(int id)
             return;
         }
     }
+}
+
+// ============================================================
+//  Plan du dépôt : réactions de la vue
+// ============================================================
+void EquipmentPage::onPlanMove(int id, const QString &nouvelleLocalisation)
+{
+    auto opt = m_repo->find(id);
+    if (!opt) return;
+    Equipment eq = *opt;
+    const QString ancienne = eq.localisation;
+    eq.localisation = nouvelleLocalisation.trimmed();
+
+    // La mise à jour Oracle passe par le repository (Equipment::modifier)
+    if (!m_repo->update(eq)) {
+        QMessageBox::warning(this, QStringLiteral("Déplacement impossible"),
+                             m_repo->lastError().isEmpty()
+                                 ? QStringLiteral("Le déplacement a échoué.") : m_repo->lastError());
+        m_plan->setEquipments(m_repo->all());       // remet la tuile à sa place
+        return;
+    }
+    m_planInfo->setText(QStringLiteral("✔ <b>%1</b> déplacé<br>de <i>%2</i><br>vers <i>%3</i>")
+                            .arg(eq.nom.toHtmlEscaped(), ancienne.toHtmlEscaped(), eq.localisation.toHtmlEscaped()));
+}
+
+void EquipmentPage::onPlanSelect(int id)
+{
+    const auto opt = m_repo->find(id);
+    if (!opt) return;
+    const Equipment &e = *opt;
+    const bool retard = !EquipmentService::alertesMaintenance({e}).isEmpty();
+    m_planInfo->setText(QStringLiteral(
+        "<h3>%1 %2</h3>"
+        "<b>Code :</b> %3<br><b>Catégorie :</b> %4<br>"
+        "<b>Statut :</b> <span style='color:%5'>%6</span><br>"
+        "<b>Étagère :</b> %7<br><b>Fournisseur :</b> %8<br>"
+        "<b>Dernière maintenance :</b> %9%10")
+        .arg(categoryIcon(e.categorie), e.nom.toHtmlEscaped(), e.code.toHtmlEscaped(),
+             e.categorie.toHtmlEscaped(), Theme::levelColor(e.statut).name(), e.statut,
+             e.localisation.toHtmlEscaped(), e.fournisseurNom.toHtmlEscaped(),
+             e.derniereMaintenance.isValid() ? e.derniereMaintenance.toString(QStringLiteral("dd/MM/yyyy")) : QStringLiteral("—"),
+             retard ? QStringLiteral("<br><span style='color:#E49740'>⚠ Maintenance en retard</span>") : QString()));
+}
+
+void EquipmentPage::onPlanAddRack()
+{
+    bool ok = false;
+    const QString nom = QInputDialog::getText(this, QStringLiteral("Nouvelle étagère"),
+                            QStringLiteral("Nom de l'étagère (ex : Dépôt Sfax) :"),
+                            QLineEdit::Normal, QString(), &ok).trimmed();
+    if (!ok) return;
+    if (nom.isEmpty() || nom.size() > 100) {
+        QMessageBox::warning(this, QStringLiteral("Nouvelle étagère"),
+                             QStringLiteral("Le nom est obligatoire (100 caractères maximum)."));
+        return;
+    }
+    if (!m_plan->addRack(nom))
+        QMessageBox::information(this, QStringLiteral("Nouvelle étagère"),
+                                 QStringLiteral("Cette étagère existe déjà."));
 }
