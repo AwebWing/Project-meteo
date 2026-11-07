@@ -43,9 +43,9 @@ CREATE TABLE AGENT (
     EMAIL           VARCHAR2(100),
     TELEPHONE       VARCHAR2(30),
     CONSTRAINT PK_AGENT        PRIMARY KEY (ID_AGENT),
-    CONSTRAINT CK_AGENT_ROLE   CHECK (ROLE IN ('Technicien Météo', 'Météorologue', 'Superviseur', 'Agent de terrain')),
-    CONSTRAINT CK_AGENT_STATUT CHECK (STATUT IN ('En service', 'Disponible', 'En congé', 'Formation')),
-    CONSTRAINT CK_AGENT_QUART  CHECK (QUART_TRAVAIL IN ('Matin (06h-14h)', 'Après-midi (14h-22h)', 'Nuit (22h-06h)')),
+    CONSTRAINT CK_AGENT_ROLE   CHECK (ROLE IN (UNISTR('Technicien M\00e9t\00e9o'), UNISTR('M\00e9t\00e9orologue'), 'Superviseur', 'Agent de terrain')),
+    CONSTRAINT CK_AGENT_STATUT CHECK (STATUT IN ('En service', 'Disponible', UNISTR('En cong\00e9'), 'Formation')),
+    CONSTRAINT CK_AGENT_QUART  CHECK (QUART_TRAVAIL IN ('Matin (06h-14h)', UNISTR('Apr\00e8s-midi (14h-22h)'), 'Nuit (22h-06h)')),
     -- Un agent n'est pas supprimé avec sa zone : il redevient simplement "sans zone".
     CONSTRAINT FK_AGENT_ZONE   FOREIGN KEY (ID_ZONE) REFERENCES ZONE (ID_ZONE) ON DELETE SET NULL
 );
@@ -67,20 +67,20 @@ END;
 -- ---------- Données de démonstration (mêmes agents que la page Emploi) ----------
 -- La zone est retrouvée par son CODE (ZN-xx, voir zones_oracle.sql).
 INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
-VALUES ('Ben Salah', 'Ahmed',   'Technicien Météo', 'En service', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-01'), 'Matin (06h-14h)');
+VALUES ('Ben Salah', 'Ahmed',   UNISTR('Technicien M\00e9t\00e9o'), 'En service', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-01'), 'Matin (06h-14h)');
 INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
-VALUES ('Trabelsi',  'Sana',    'Météorologue',     'Disponible', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-05'), 'Après-midi (14h-22h)');
+VALUES ('Trabelsi',  'Sana',    UNISTR('M\00e9t\00e9orologue'),     'Disponible', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-05'), UNISTR('Apr\00e8s-midi (14h-22h)'));
 INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
 VALUES ('Jlassi',    'Karim',   'Agent de terrain', 'En service', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-01'), 'Matin (06h-14h)');
 INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
 VALUES ('Gharbi',    'Meriam',  'Superviseur',      'Disponible', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-04'), 'Matin (06h-14h)');
 INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
-VALUES ('Kouki',     'Yasmine', 'Météorologue',     'En service', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-03'), 'Après-midi (14h-22h)');
+VALUES ('Kouki',     'Yasmine', UNISTR('M\00e9t\00e9orologue'),     'En service', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-03'), UNISTR('Apr\00e8s-midi (14h-22h)'));
 INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
-VALUES ('Nouioui',   'Adem',    'Technicien Météo', 'En congé',   (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-01'), 'Nuit (22h-06h)');
+VALUES ('Nouioui',   'Adem',    UNISTR('Technicien M\00e9t\00e9o'), UNISTR('En cong\00e9'),   (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-01'), 'Nuit (22h-06h)');
 INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
 VALUES ('Ghandour',  'Aweb',    'Agent de terrain', 'En service', (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-06'), 'Matin (06h-14h)');
 INSERT INTO AGENT (NOM, PRENOM, ROLE, STATUT, ID_ZONE, QUART_TRAVAIL)
-VALUES ('Eddine',    'Bader',   'Superviseur',      'Formation',  (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-02'), 'Après-midi (14h-22h)');
+VALUES ('Eddine',    'Bader',   'Superviseur',      'Formation',  (SELECT ID_ZONE FROM ZONE WHERE CODE = 'ZN-02'), UNISTR('Apr\00e8s-midi (14h-22h)'));
 
 COMMIT;

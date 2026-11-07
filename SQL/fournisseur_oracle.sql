@@ -48,11 +48,11 @@ CREATE TABLE FOURNISSEUR (
     DATE_FIN        DATE          NOT NULL,
     STATUT          VARCHAR2(20)  DEFAULT 'Actif' NOT NULL,
     CONSTRAINT PK_FOURNISSEUR     PRIMARY KEY (ID_FOURNISSEUR),
-    CONSTRAINT CK_FOURN_TYPE      CHECK (TYPE IN ('Capteurs et stations', 'Maintenance', 'Énergie', 'Réseau et télécom', 'Informatique')),
+    CONSTRAINT CK_FOURN_TYPE      CHECK (TYPE IN ('Capteurs et stations', 'Maintenance', UNISTR('\00c9nergie'), UNISTR('R\00e9seau et t\00e9l\00e9com'), 'Informatique')),
     CONSTRAINT CK_FOURN_NOTE      CHECK (NOTE BETWEEN 1 AND 5),
     CONSTRAINT CK_FOURN_DELAI     CHECK (DELAI BETWEEN 1 AND 365),
     CONSTRAINT CK_FOURN_DATES     CHECK (DATE_FIN >= DATE_DEBUT),
-    CONSTRAINT CK_FOURN_STATUT    CHECK (STATUT IN ('Actif', 'Suspendu', 'Archivé'))
+    CONSTRAINT CK_FOURN_STATUT    CHECK (STATUT IN ('Actif', 'Suspendu', UNISTR('Archiv\00e9')))
 );
 
 -- ---------- Triggers : clé primaire automatique si non fournie ----------
@@ -69,13 +69,13 @@ END;
 -- Les dates sont relatives à aujourd'hui pour que les alertes
 -- "contrat à renouveler" (moins de 30 jours) restent visibles.
 INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
-VALUES ('Meteo Sensors TN', 'Capteurs et stations', 'Sami Ben Ali', 'sami@meteosensors.tn', '71000001', 'Rue de la Liberté', 'Tunis', '1234567/A/M/000', 'Tunis', 5, 10, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 200, 'Actif');
+VALUES ('Meteo Sensors TN', 'Capteurs et stations', 'Sami Ben Ali', 'sami@meteosensors.tn', '71000001', UNISTR('Rue de la Libert\00e9'), 'Tunis', '1234567/A/M/000', 'Tunis', 5, 10, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 200, 'Actif');
 
 INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
-VALUES ('SolarTunis', 'Énergie', 'Rim Trabelsi', 'rim@solartunis.tn', '71000002', 'Avenue Habib Bourguiba', 'Ariana', '2345678/B/M/000', 'Ariana', 4, 14, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 20, 'Actif');
+VALUES ('SolarTunis', UNISTR('\00c9nergie'), 'Rim Trabelsi', 'rim@solartunis.tn', '71000002', 'Avenue Habib Bourguiba', 'Ariana', '2345678/B/M/000', 'Ariana', 4, 14, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 20, 'Actif');
 
 INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
-VALUES ('Réseau Plus', 'Réseau et télécom', 'Karim Mansour', 'karim@reseauplus.tn', '71000003', 'Zone industrielle', 'Ben Arous', '3456789/C/M/000', 'Ben Arous', 4, 8, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 15, 'Actif');
+VALUES (UNISTR('R\00e9seau Plus'), UNISTR('R\00e9seau et t\00e9l\00e9com'), 'Karim Mansour', 'karim@reseauplus.tn', '71000003', 'Zone industrielle', 'Ben Arous', '3456789/C/M/000', 'Ben Arous', 4, 8, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 15, 'Actif');
 
 INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
 VALUES ('InfoPlus', 'Informatique', 'Nour Jaziri', 'nour@infoplus.tn', '71000004', 'Centre urbain nord', 'Tunis', '4567890/D/M/000', 'Tunis', 3, 16, TRUNC(SYSDATE) - 365, TRUNC(SYSDATE) + 300, 'Suspendu');
@@ -84,6 +84,6 @@ INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNO
 VALUES ('AutoPro Tunisie', 'Maintenance', 'Hatem Gharbi', 'hatem@autopro.tn', '71000005', 'Route de Sousse', 'Sousse', '5678901/E/M/000', 'Sousse', 4, 6, TRUNC(SYSDATE) - 200, TRUNC(SYSDATE) + 250, 'Actif');
 
 INSERT INTO FOURNISSEUR (NOM, TYPE, CONTACT, EMAIL, TELEPHONE, ADRESSE, GOUVERNORAT, MATRICULE_FISCAL, VILLE, NOTE, DELAI, DATE_DEBUT, DATE_FIN, STATUT)
-VALUES ('Sécurité Pro', 'Maintenance', 'Leila Ferchichi', 'leila@securitepro.tn', '71000006', 'Avenue de la République', 'Sfax', '6789012/F/M/000', 'Sfax', 5, 5, TRUNC(SYSDATE) - 150, TRUNC(SYSDATE) + 400, 'Actif');
+VALUES (UNISTR('S\00e9curit\00e9 Pro'), 'Maintenance', 'Leila Ferchichi', 'leila@securitepro.tn', '71000006', UNISTR('Avenue de la R\00e9publique'), 'Sfax', '6789012/F/M/000', 'Sfax', 5, 5, TRUNC(SYSDATE) - 150, TRUNC(SYSDATE) + 400, 'Actif');
 
 COMMIT;

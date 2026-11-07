@@ -27,7 +27,9 @@ Projet Qt 6 (Widgets + Charts + SQL), compilé avec qmake : `SmartWeather.pro`.
 
 - Chaque script est **re-exécutable** (il supprime puis recrée ses objets) : ne pas le relancer sur une base dont les
   données comptent. Pour tout réinitialiser de façon cohérente, utiliser `install_all.sql`.
-- Ouvrir les scripts en **UTF-8** (SQL Developer > Outils > Préférences > Environnement > Encodage), sinon les valeurs
+- Les valeurs accentuées des scripts sont écrites avec `UNISTR('...\00e9...')` : elles s'installent correctement quelle que soit
+  l'encodage du client (sqlplus, SQL Developer...). Si vous voyez `Ã©` dans l'application, la base contient d'anciennes données mal encodées : relancer `install_all.sql`.
+- (Ancien conseil) Ouvrir les scripts en **UTF-8** (SQL Developer > Outils > Préférences > Environnement > Encodage), sinon les valeurs
   accentuées (`Planifiée`, `Archivé`...) ne correspondront plus aux contraintes `CHECK`.
 - Modèles (MCD / MLD / MPD) : `docs/MODELE_DONNEES.md`.
 
